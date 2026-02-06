@@ -1,0 +1,346 @@
+.news-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.news-tabs {
+    display: flex;
+    gap: 1rem;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+.tab {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    transition: all 0.2s ease;
+    position: relative;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.tab:hover {
+    color: var(--text-primary);
+}
+
+.tab.active {
+    color: var(--accent-color);
+}
+
+.tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: var(--accent-color);
+}
+
+.news-filters {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    align-items: center;
+}
+
+.filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.filter-btn:hover {
+    border-color: var(--accent-color);
+    color: var(--text-primary);
+}
+
+.filter-btn.active {
+    background-color: var(--text-primary);
+    border-color: var(--text-primary);
+    color: var(--bg-primary);
+}
+
+.customize-feed {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background-color: rgba(239, 68, 68, 0.05);
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    color: var(--accent-color);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.news-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.news-card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.news-card-link:hover .news-title {
+    color: var(--accent-color);
+    transition: color 0.2s ease;
+}
+
+.news-card {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    gap: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.news-card:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+.news-content {
+    flex: 1;
+}
+
+.news-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
+.news-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.news-separator {
+    color: var(--border-color);
+}
+
+.news-description {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 5;
+    line-clamp: 5;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.news-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.tag {
+    padding: 0.25rem 0.75rem;
+    background-color: var(--bg-tertiary);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.news-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1rem;
+}
+
+.news-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.action-btn:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.action-btn.liked {
+    color: var(--accent-color);
+}
+
+.action-btn.bookmarked {
+    color: var(--accent-color);
+}
+
+.view-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--accent-color);
+    color: white;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.view-btn:hover {
+    background-color: var(--accent-hover);
+    transform: scale(1.05);
+}
+
+.news-image {
+    position: relative;
+    width: 200px;
+    flex-shrink: 0;
+}
+
+.news-image img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.news-views {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 2rem;
+    padding: 1rem;
+}
+
+.pagination button {
+    min-width: 40px;
+    height: 40px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.pagination button:hover:not(:disabled) {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+    background-color: var(--bg-tertiary);
+}
+
+.pagination button.active {
+    background-color: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+.pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination .dots {
+    padding: 0.5rem;
+    color: var(--text-secondary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .news-container {
+        padding: 1rem;
+    }
+
+    .news-card {
+        flex-direction: column;
+    }
+
+    .news-image {
+        display: none;
+    }
+
+    .news-actions {
+        gap: 0.5rem;
+    }
+
+    .action-btn span {
+        display: none;
+    }
+
+    .action-btn.like-btn span,
+    .action-btn.github-btn span {
+        display: inline;
+    }
+
+    .pagination {
+        gap: 0.25rem;
+    }
+
+    .pagination button {
+        min-width: 36px;
+        height: 36px;
+        padding: 0.5rem;
+        font-size: 0.875rem;
+    }
+}

@@ -1,0 +1,150 @@
+.article-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 500;
+    margin-bottom: 2rem;
+    padding: 0.5rem 0;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.back-link:hover {
+    color: var(--text-primary);
+    text-decoration: underline;
+}
+
+.article-header {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.article-meta-top {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+}
+
+.institution {
+    color: var(--accent-color);
+    font-weight: 600;
+}
+
+.article-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: 1.5rem;
+}
+
+.article-authors {
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-bottom: 1.5rem;
+}
+
+.article-tags {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tag {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+}
+
+.article-image {
+    margin-bottom: 2.5rem;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.article-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.article-body {
+    font-size: 1.125rem;
+    line-height: 1.8;
+    color: var(--text-primary);
+    margin-bottom: 3rem;
+}
+
+.article-body h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+
+.article-body p {
+    margin-bottom: 1.5rem;
+}
+
+.article-body ul {
+    margin-bottom: 1.5rem;
+    padding-left: 1.5rem;
+}
+
+.article-body li {
+    margin-bottom: 0.5rem;
+}
+
+.article-footer {
+    border-top: 1px solid var(--border-color);
+    padding-top: 2rem;
+    margin-top: 2rem;
+}
+
+.stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    color: var(--text-secondary);
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Dark mode support */
+[data-theme="dark"] .article-image {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .article-container {
+        padding: 1rem;
+    }
+
+    .article-title {
+        font-size: 1.75rem;
+    }
+
+    .article-body {
+        font-size: 1rem;
+    }
+}

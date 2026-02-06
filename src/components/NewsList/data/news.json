@@ -1,0 +1,61 @@
+[
+    {
+        "id": 1,
+        "title": "Nghiên cứu mới về vaccine HIV cho kết quả hứa hẹn trong thử nghiệm lâm sàng giai đoạn 1",
+        "description": "Thử nghiệm lâm sàng IAVI G001 cho thấy ứng viên vaccine mới huy động thành công các tế bào B tiền thân hiếm gặp cần thiết để kích hoạt quá trình tạo ra các kháng thể trung hòa rộng rãi (bnAbs).",
+        "date": "04/02/2024",
+        "institution": "Scripps Research",
+        "authors": [
+            "Dr. William Schief",
+            "Team Scripps"
+        ],
+        "tags": [
+            "Vaccine",
+            "HIV",
+            "ClinicalTrial"
+        ],
+        "likes": 124,
+        "views": 3500,
+        "image": "https://images.unsplash.com/photo-1579152276507-2c7004b8039e?q=80&w=2070&auto=format&fit=crop",
+        "content": "<h2>Tổng quan nghiên cứu</h2><p>Các nhà nghiên cứu tại Scripps Research và IAVI đã đạt được bước đột phá trong việc phát triển vaccine HIV. Nghiên cứu tập trung vào việc kích hoạt các tế bào B cụ thể để bắt đầu quá trình sản sinh ra các kháng thể trung hòa rộng rãi.</p><h2>Kết quả chính</h2><ul><li>97% người tham gia thử nghiệm có phản ứng miễn dịch mong muốn.</li><li>Không có tác dụng phụ nghiêm trọng nào được ghi nhận.</li><li>Mở đường cho các thử nghiệm giai đoạn 2 quy mô lớn hơn.</li></ul><p>Đây là một bước tiến quan trọng vì HIV là một loại virus cực kỳ khó để chế tạo vaccine do khả năng biến đổi liên tục của nó.</p>"
+    },
+    {
+        "id": 2,
+        "title": "WHO cập nhật hướng dẫn điều trị ARV cho trẻ em và thanh thiếu niên",
+        "description": "Hướng dẫn mới nhấn mạnh việc sử dụng Dolutegravir (DTG) là lựa chọn ưu tiên cho tất cả các nhóm tuổi, cải thiện hiệu quả và giảm tác dụng phụ.",
+        "date": "02/02/2024",
+        "institution": "WHO",
+        "authors": [
+            "WHO Health Team"
+        ],
+        "tags": [
+            "Guidelines",
+            "ARV",
+            "Pediatrics"
+        ],
+        "likes": 89,
+        "views": 2100,
+        "image": "https://images.unsplash.com/photo-1581056771107-24ca5f033742?q=80&w=2070&auto=format&fit=crop",
+        "content": "<h2>Cập nhật quan trọng từ WHO</h2><p>Tổ chức Y tế Thế giới (WHO) vừa ban hành hướng dẫn mới nhất về điều trị kháng virus (ARV) cho trẻ em. Điểm nổi bật là đề xuất sử dụng thuốc chứa dolutegravir (DTG).</p><h2>Lợi ích của DTG</h2><p>DTG ít có khả năng gây kháng thuốc hơn và có tác dụng phụ nhẹ hơn so với các phác đồ cũ. Việc tối ưu hóa điều trị cho trẻ em vẫn là một thách thức lớn trong cuộc chiến chống lại AIDS toàn cầu.</p>"
+    },
+    {
+        "id": 3,
+        "title": "Sử dụng AI trong dự đoán khả năng kháng thuốc của virus HIV",
+        "description": "Các nhà khoa học sử dụng mô hình học máy để phân tích bộ gen virus, giúp bác sĩ lựa chọn phác đồ điều trị cá nhân hóa hiệu quả hơn 30%.",
+        "date": "31/01/2024",
+        "institution": "Stanford University",
+        "authors": [
+            "Prof. Jane Doe",
+            "AI Lab"
+        ],
+        "tags": [
+            "AI",
+            "HIV",
+            "MachineLearning"
+        ],
+        "likes": 256,
+        "views": 5800,
+        "image": "https://images.unsplash.com/photo-1532187875605-1ef6c237a1e0?q=80&w=2070&auto=format&fit=crop",
+        "content": "<h2>AI và Y học chính xác</h2><p>Trường Đại học Stanford đã phát triển một công cụ AI mới có khả năng dự đoán chính xác cách virus HIV của một bệnh nhân cụ thể sẽ phản ứng với các loại thuốc khác nhau.</p><h2>Cơ chế hoạt động</h2><p>Hệ thống phân tích hàng nghìn đột biến gen trong bộ gen của virus và so sánh với cơ sở dữ liệu khổng lồ về kết quả điều trị lâm sàng. Điều này giúp loại bỏ phương pháp 'thử và sai' truyền thống, rút ngắn thời gian tìm ra thuốc phù hợp.</p>"
+    }
+]
