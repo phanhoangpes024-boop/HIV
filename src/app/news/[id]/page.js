@@ -1,17 +1,77 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import newsData from '@/components/NewsList/data/news.json';
+import { createClient } from '@supabase/supabase-js';
 import './NewsDetail.css';
 
-export function generateStaticParams() {
-    return newsData.map((news) => ({
-        id: news.id.toString(),
+// Tạo Supabase client cho server-side
+const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
+
+// Hàm lấy tất cả bài viết để generate static paths
+async function getAllArticles() {
+    const { data, error } = await supabase
+        .from('articles')
+        .select('id');
+    
+    if (error) {
+        console.error('Lỗi khi lấy danh sách bài viết:', error);
+        return [];
+    }
+    
+    return data || [];
+}
+
+// Hàm lấy chi tiết một bài viết
+async function getArticleById(id) {
+    // Lấy thông tin bài viết
+    const { data: article, error: articleError } = await supabase
+        .from('articles')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (articleError || !article) {
+        return null;
+    }
+
+    // Lấy tác giả
+    const { data: authorData } = await supabase
+        .from('article_authors')
+        .select('author_id, authors(name)')
+        .eq('article_id', id);
+
+    const authors = authorData?.map(item => item.authors.name) || [];
+
+    // Lấy tags
+    const { data: tagData } = await supabase
+        .from('article_tags')
+        .select('tag_id, tags(name)')
+        .eq('article_id', id);
+
+    const tags = tagData?.map(item => item.tags.name) || [];
+
+    return {
+        ...article,
+        authors,
+        tags,
+        date: new Date(article.date).toLocaleDateString('vi-VN')
+    };
+}
+
+// Generate static paths cho tất cả bài viết
+export async function generateStaticParams() {
+    const articles = await getAllArticles();
+    return articles.map((article) => ({
+        id: article.id.toString(),
     }));
 }
 
+// Component hiển thị trang chi tiết
 export default async function NewsDetailPage({ params }) {
     const { id } = await params;
-    const news = newsData.find(n => n.id.toString() === id);
+    const news = await getArticleById(id);
 
     if (!news) {
         notFound();

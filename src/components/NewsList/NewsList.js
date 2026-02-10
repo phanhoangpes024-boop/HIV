@@ -1,18 +1,139 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import './NewsList.css';
-import newsData from './data/news.json';
+import { supabase } from '@/lib/supabase';
 
 const ITEMS_PER_PAGE = 10;
 
 export default function NewsList() {
+    const [newsData, setNewsData] = useState([]);
+    const [allTags, setAllTags] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
-    const [activeTab, setActiveTab] = useState('articles'); // articles, standards
-    const [activeFilter, setActiveFilter] = useState('hot'); // hot, recommended
+    const [activeFilter, setActiveFilter] = useState('latest');
     const [likedArticles, setLikedArticles] = useState({});
     const [bookmarkedArticles, setBookmarkedArticles] = useState({});
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedTags, setSelectedTags] = useState([]);
+    const [dateFilter, setDateFilter] = useState('all');
+    const filterRef = useRef(null);
+
+    // Lấy dữ liệu từ Supabase khi component được load
+    useEffect(() => {
+        fetchArticles();
+        fetchTags();
+    }, []);
+
+    // Đóng dropdown khi click bên ngoài và khóa cuộn trang trên mobile
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (filterRef.current && !filterRef.current.contains(event.target)) {
+                setIsFilterOpen(false);
+            }
+        }
+
+        if (isFilterOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+            // Khóa cuộn trang trên mobile khi mở filter
+            if (window.innerWidth <= 768) {
+                document.body.style.overflow = 'hidden';
+            }
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.body.style.overflow = 'unset';
+        };
+    }, [isFilterOpen]);
+
+    const fetchTags = async () => {
+        const { data } = await supabase.from('tags').select('name').order('name');
+        if (data) setAllTags(data.map(t => t.name));
+    };
+
+    const fetchArticles = async () => {
+        try {
+            setLoading(true);
+
+            let query = supabase.from('articles').select('*');
+
+            // Áp dụng bộ lọc thời gian
+            if (dateFilter === 'week') {
+                const weekAgo = new Date();
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                query = query.gte('date', weekAgo.toISOString().split('T')[0]);
+            } else if (dateFilter === 'month') {
+                const monthAgo = new Date();
+                monthAgo.setMonth(monthAgo.getMonth() - 1);
+                query = query.gte('date', monthAgo.toISOString().split('T')[0]);
+            }
+
+            const { data: articles, error: articlesError } = await query;
+            if (articlesError) throw articlesError;
+
+            // Lấy thông tin tác giả và tags cho từng bài viết
+            let articlesWithDetails = await Promise.all(
+                articles.map(async (article) => {
+                    const { data: authorData } = await supabase
+                        .from('article_authors')
+                        .select('author_id, authors(name)')
+                        .eq('article_id', article.id);
+                    const authors = authorData?.map(item => item.authors.name) || [];
+
+                    const { data: tagData } = await supabase
+                        .from('article_tags')
+                        .select('tag_id, tags(name)')
+                        .eq('article_id', article.id);
+                    const tags = tagData?.map(item => item.tags.name) || [];
+
+                    return {
+                        ...article,
+                        authors,
+                        tags,
+                        date: new Date(article.date).toLocaleDateString('vi-VN')
+                    };
+                })
+            );
+
+            // Lọc theo tags
+            if (selectedTags.length > 0) {
+                articlesWithDetails = articlesWithDetails.filter(article =>
+                    article.tags.some(tag => selectedTags.includes(tag))
+                );
+            }
+
+            // Lọc theo tìm kiếm
+            if (searchTerm) {
+                articlesWithDetails = articlesWithDetails.filter(article =>
+                    article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    article.description.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+            }
+
+            // Sắp xếp theo bộ lọc
+            if (activeFilter === 'latest') {
+                articlesWithDetails.sort((a, b) => new Date(b.date) - new Date(a.date));
+            } else if (activeFilter === 'liked') {
+                articlesWithDetails.sort((a, b) => b.likes - a.likes);
+            }
+
+            setNewsData(articlesWithDetails);
+        } catch (error) {
+            console.error('Lỗi khi lấy dữ liệu:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Cập nhật dữ liệu khi bộ lọc thay đổi
+    useEffect(() => {
+        fetchArticles();
+    }, [activeFilter, searchTerm, selectedTags, dateFilter]);
 
     const totalPages = Math.ceil(newsData.length / ITEMS_PER_PAGE);
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -48,7 +169,6 @@ export default function NewsList() {
             startPage = Math.max(1, endPage - maxVisiblePages + 1);
         }
 
-        // Previous
         pages.push(
             <button
                 key="prev"
@@ -59,7 +179,6 @@ export default function NewsList() {
             </button>
         );
 
-        // First page + dots
         if (startPage > 1) {
             pages.push(
                 <button key={1} onClick={() => setCurrentPage(1)}>1</button>
@@ -69,7 +188,6 @@ export default function NewsList() {
             }
         }
 
-        // Page numbers
         for (let i = startPage; i <= endPage; i++) {
             pages.push(
                 <button
@@ -82,7 +200,6 @@ export default function NewsList() {
             );
         }
 
-        // Last page + dots
         if (endPage < totalPages) {
             if (endPage < totalPages - 1) {
                 pages.push(<span key="dots2" className="dots">...</span>);
@@ -92,7 +209,6 @@ export default function NewsList() {
             );
         }
 
-        // Next
         pages.push(
             <button
                 key="next"
@@ -106,54 +222,130 @@ export default function NewsList() {
         return pages;
     };
 
+    if (loading) {
+        return (
+            <div className="news-container">
+                <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+                    Đang tải dữ liệu...
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="news-container">
-            <div className="news-tabs">
-                <button
-                    className={`tab ${activeTab === 'articles' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('articles')}
-                >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <div className="news-header">
+                <h2 className="news-header-title">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="news-icon">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                     </svg>
-                    Các bài báo
-                </button>
-                <button
-                    className={`tab ${activeTab === 'standards' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('standards')}
-                >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    Tiêu chuẩn
-                </button>
+                    Tin tức
+                </h2>
             </div>
 
             <div className="news-filters">
-                <button className="filter-btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                    </svg>
-                </button>
-                <button
-                    className={`filter-btn ${activeFilter === 'hot' ? 'active' : ''}`}
-                    onClick={() => setActiveFilter('hot')}
-                >
-                    Nóng
-                </button>
-                <button
-                    className={`filter-btn ${activeFilter === 'recommended' ? 'active' : ''}`}
-                    onClick={() => setActiveFilter('recommended')}
-                >
-                    Khuyến khích
-                </button>
-            </div>
+                <div className="filter-left">
+                    <div className={`filter-overlay ${isFilterOpen ? 'active' : ''}`} onClick={() => setIsFilterOpen(false)}></div>
+                    <div className="filter-dropdown" ref={filterRef}>
+                        <button
+                            className="filter-trigger-btn"
+                            onClick={() => setIsFilterOpen(!isFilterOpen)}
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                            </svg>
+                        </button>
 
-            <div className="customize-feed">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                </svg>
-                <span>Tùy chỉnh nguồn cấp dữ liệu của bạn</span>
+                        {isFilterOpen && (
+                            <div className="filter-dropdown-menu">
+                                <input
+                                    type="text"
+                                    placeholder="Tìm kiếm chủ đề..."
+                                    className="filter-search-input"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+
+                                <div className="filter-section">
+                                    <div className="filter-section-header">
+                                        <span>Chủ đề</span>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </div>
+                                    <div className="filter-tags">
+                                        {allTags.map(tag => (
+                                            <button
+                                                key={tag}
+                                                className={`filter-tag ${selectedTags.includes(tag) ? 'active' : ''}`}
+                                                onClick={() => {
+                                                    setSelectedTags(prev =>
+                                                        prev.includes(tag)
+                                                            ? prev.filter(t => t !== tag)
+                                                            : [...prev, tag]
+                                                    );
+                                                }}
+                                            >
+                                                {tag}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="filter-section">
+                                    <div className="filter-section-header">
+                                        <span>Thời gian xuất bản</span>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </div>
+                                    <div className="filter-options">
+                                        <label className="filter-radio">
+                                            <input
+                                                type="radio"
+                                                name="dateFilter"
+                                                checked={dateFilter === 'all'}
+                                                onChange={() => setDateFilter('all')}
+                                            />
+                                            <span>Tất cả</span>
+                                        </label>
+                                        <label className="filter-radio">
+                                            <input
+                                                type="radio"
+                                                name="dateFilter"
+                                                checked={dateFilter === 'week'}
+                                                onChange={() => setDateFilter('week')}
+                                            />
+                                            <span>Tuần này</span>
+                                        </label>
+                                        <label className="filter-radio">
+                                            <input
+                                                type="radio"
+                                                name="dateFilter"
+                                                checked={dateFilter === 'month'}
+                                                onChange={() => setDateFilter('month')}
+                                            />
+                                            <span>Tháng này</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <button
+                        className={`filter-btn ${activeFilter === 'latest' ? 'active' : ''}`}
+                        onClick={() => setActiveFilter('latest')}
+                    >
+                        Mới nhất
+                    </button>
+                    <button
+                        className={`filter-btn ${activeFilter === 'liked' ? 'active' : ''}`}
+                        onClick={() => setActiveFilter('liked')}
+                    >
+                        Yêu thích
+                    </button>
+                </div>
             </div>
 
             <div className="news-list">
