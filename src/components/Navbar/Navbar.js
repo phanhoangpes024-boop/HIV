@@ -4,18 +4,42 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import './Navbar.css';
+import { createClient } from '../../utils/supabase/client';
+import { signOutAction } from '../../app/auth/auth-action';
 
 export default function Navbar() {
     const pathname = usePathname();
     const [isExpanded, setIsExpanded] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [theme, setTheme] = useState('light');
+    const [user, setUser] = useState(null);
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const supabase = createClient();
+
+    const handleLogout = async () => {
+        await signOutAction();
+        window.location.href = '/';
+    };
 
     useEffect(() => {
         // Initialize theme
         const savedTheme = localStorage.getItem('theme') || 'light';
         setTheme(savedTheme);
         document.documentElement.setAttribute('data-theme', savedTheme);
+
+        // Check user session
+        const getUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+        };
+        getUser();
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     const toggleTheme = () => {
@@ -59,14 +83,30 @@ export default function Navbar() {
                 </svg>
             )
         },
-        {
+    ];
+
+    // Chỉ hiện nút Đăng nhập nếu chưa có user
+    if (!user) {
+        navItems.push({
             href: '/signin', text: 'Đăng Nhập', icon: (
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                 </svg>
             )
-        },
-    ];
+        });
+    }
+
+    // Lấy chữ cái đầu và mã ngắn từ email
+    const getUserDisplay = () => {
+        if (!user) return { initial: '', shortId: '' };
+        const email = user.email;
+        const initial = email.charAt(0).toUpperCase();
+        // Lấy 4 ký tự cuối của id làm mã ngắn
+        const shortId = user.id.substring(user.id.length - 4);
+        return { initial, shortId };
+    };
+
+    const { initial, shortId } = getUserDisplay();
 
     return (
         <>
@@ -127,6 +167,38 @@ export default function Navbar() {
                             <span className="nav-text">{item.text}</span>
                         </Link>
                     ))}
+
+                    {user && (
+                        <div className="user-section">
+                            <div
+                                className={`nav-item user-trigger ${userMenuOpen ? 'active' : ''}`}
+                                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                            >
+                                <div className="user-avatar">{initial}</div>
+                                <span className="nav-text user-name">User #{shortId}</span>
+                            </div>
+
+                            {userMenuOpen && (
+                                <div className="user-dropdown">
+                                    <button className="dropdown-item">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                        Chỉnh sửa hồ sơ
+                                    </button>
+                                    <button
+                                        className="dropdown-item logout"
+                                        onClick={handleLogout}
+                                    >
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                                        </svg>
+                                        Đăng xuất
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <div className="navbar-footer">
