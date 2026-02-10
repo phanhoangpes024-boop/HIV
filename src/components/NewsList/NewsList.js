@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import './NewsList.css';
-import { supabase } from '../../lib/supabase';
+import { createClient } from '../../utils/supabase/client';
 
 const ITEMS_PER_PAGE = 10;
 
 export default function NewsList() {
+    const router = useRouter();
+    const supabase = createClient(); // Tạo client mới
     const [newsData, setNewsData] = useState([]);
     const [allTags, setAllTags] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -19,15 +22,56 @@ export default function NewsList() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedTags, setSelectedTags] = useState([]);
     const [dateFilter, setDateFilter] = useState('all');
+    const [user, setUser] = useState(null);
     const filterRef = useRef(null);
 
-    // Lấy dữ liệu từ Supabase khi component được load
+    // Kiểm tra user đã đăng nhập chưa
+    useEffect(() => {
+        const getUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+
+            // Nếu user đã đăng nhập, lấy danh sách bài viết user đã like
+            if (user) {
+                fetchUserLikes(user.id);
+            }
+        };
+        getUser();
+
+        // Lắng nghe thay đổi trạng thái đăng nhập
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+            if (session?.user) {
+                fetchUserLikes(session.user.id);
+            } else {
+                setLikedArticles({});
+            }
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    // Lấy danh sách bài viết user đã like
+    const fetchUserLikes = async (userId) => {
+        const { data, error } = await supabase
+            .from('article_likes')
+            .select('article_id')
+            .eq('user_id', userId);
+
+        if (data && !error) {
+            const likes = {};
+            data.forEach(item => {
+                likes[item.article_id] = true;
+            });
+            setLikedArticles(likes);
+        }
+    };
+
     useEffect(() => {
         fetchArticles();
         fetchTags();
     }, []);
 
-    // Đóng dropdown khi click bên ngoài và khóa cuộn trang trên mobile
     useEffect(() => {
         function handleClickOutside(event) {
             if (filterRef.current && !filterRef.current.contains(event.target)) {
@@ -37,7 +81,6 @@ export default function NewsList() {
 
         if (isFilterOpen) {
             document.addEventListener('mousedown', handleClickOutside);
-            // Khóa cuộn trang trên mobile khi mở filter
             if (window.innerWidth <= 768) {
                 document.body.style.overflow = 'hidden';
             }
@@ -60,9 +103,16 @@ export default function NewsList() {
         try {
             setLoading(true);
 
-            let query = supabase.from('articles').select('*');
+            let query = supabase.from('articles').select(`
+                *,
+                article_authors (
+                    authors ( name )
+                ),
+                article_tags (
+                    tags ( name )
+                )
+            `);
 
-            // Áp dụng bộ lọc thời gian
             if (dateFilter === 'week') {
                 const weekAgo = new Date();
                 weekAgo.setDate(weekAgo.getDate() - 7);
@@ -76,38 +126,19 @@ export default function NewsList() {
             const { data: articles, error: articlesError } = await query;
             if (articlesError) throw articlesError;
 
-            // Lấy thông tin tác giả và tags cho từng bài viết
-            let articlesWithDetails = await Promise.all(
-                articles.map(async (article) => {
-                    const { data: authorData } = await supabase
-                        .from('article_authors')
-                        .select('author_id, authors(name)')
-                        .eq('article_id', article.id);
-                    const authors = authorData?.map(item => item.authors.name) || [];
+            let articlesWithDetails = articles.map(article => ({
+                ...article,
+                authors: article.article_authors?.map(a => a.authors?.name).filter(Boolean) || [],
+                tags: article.article_tags?.map(t => t.tags?.name).filter(Boolean) || [],
+                date: new Date(article.date).toLocaleDateString('vi-VN')
+            }));
 
-                    const { data: tagData } = await supabase
-                        .from('article_tags')
-                        .select('tag_id, tags(name)')
-                        .eq('article_id', article.id);
-                    const tags = tagData?.map(item => item.tags.name) || [];
-
-                    return {
-                        ...article,
-                        authors,
-                        tags,
-                        date: new Date(article.date).toLocaleDateString('vi-VN')
-                    };
-                })
-            );
-
-            // Lọc theo tags
             if (selectedTags.length > 0) {
                 articlesWithDetails = articlesWithDetails.filter(article =>
                     article.tags.some(tag => selectedTags.includes(tag))
                 );
             }
 
-            // Lọc theo tìm kiếm
             if (searchTerm) {
                 articlesWithDetails = articlesWithDetails.filter(article =>
                     article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -115,7 +146,6 @@ export default function NewsList() {
                 );
             }
 
-            // Sắp xếp theo bộ lọc
             if (activeFilter === 'latest') {
                 articlesWithDetails.sort((a, b) => new Date(b.date) - new Date(a.date));
             } else if (activeFilter === 'liked') {
@@ -130,32 +160,99 @@ export default function NewsList() {
         }
     };
 
-    // Cập nhật dữ liệu khi bộ lọc thay đổi
     useEffect(() => {
         fetchArticles();
     }, [activeFilter, searchTerm, selectedTags, dateFilter]);
 
-    const totalPages = Math.ceil(newsData.length / ITEMS_PER_PAGE);
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const currentNews = newsData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-
-    const toggleLike = (e, id) => {
+    // Xử lý Like
+    // Xử lý Like (Optimistic UI)
+    const toggleLike = async (e, articleId) => {
         e.preventDefault();
         e.stopPropagation();
-        setLikedArticles(prev => ({
-            ...prev,
-            [id]: !prev[id]
-        }));
+
+        // Kiểm tra user đã đăng nhập chưa
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+        if (!currentUser) {
+            router.push('/signin');
+            return;
+        }
+
+        const isLiked = likedArticles[articleId];
+
+        // 1. Cập nhật UI ngay lập tức (Optimistic Update)
+        setLikedArticles(prev => {
+            const newLikes = { ...prev };
+            if (isLiked) delete newLikes[articleId];
+            else newLikes[articleId] = true;
+            return newLikes;
+        });
+
+        setNewsData(prev => prev.map(article =>
+            article.id === articleId
+                ? { ...article, likes: article.likes + (isLiked ? -1 : 1) }
+                : article
+        ));
+
+        // 2. Gọi API xử lý ngầm
+        try {
+            if (isLiked) {
+                // Bỏ like
+                const { error } = await supabase
+                    .from('article_likes')
+                    .delete()
+                    .eq('user_id', currentUser.id)
+                    .eq('article_id', articleId);
+
+                if (error) throw error;
+            } else {
+                // Thêm like
+                const { error } = await supabase
+                    .from('article_likes')
+                    .insert({
+                        user_id: currentUser.id,
+                        article_id: articleId
+                    });
+
+                if (error) throw error;
+            }
+        } catch (error) {
+            console.error('Lỗi khi like/unlike:', error);
+
+            // 3. Rollback nếu API lỗi
+            setLikedArticles(prev => {
+                const newLikes = { ...prev };
+                if (isLiked) newLikes[articleId] = true; // Khôi phục like cũ
+                else delete newLikes[articleId]; // Khôi phục chưa like
+                return newLikes;
+            });
+
+            setNewsData(prev => prev.map(article =>
+                article.id === articleId
+                    ? { ...article, likes: article.likes + (isLiked ? 1 : -1) } // Trả lại số like cũ
+                    : article
+            ));
+        }
     };
 
     const toggleBookmark = (e, id) => {
         e.preventDefault();
         e.stopPropagation();
+
+        if (!user) {
+            router.push('/signin');
+            return;
+        }
+
         setBookmarkedArticles(prev => ({
             ...prev,
             [id]: !prev[id]
         }));
     };
+
+    const totalPages = Math.ceil(newsData.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const currentNews = newsData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
     const renderPagination = () => {
         if (totalPages <= 1) return null;
@@ -380,7 +477,7 @@ export default function NewsList() {
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill={likedArticles[news.id] ? 'currentColor' : 'none'} stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                                             </svg>
-                                            <span>{news.likes + (likedArticles[news.id] ? 1 : 0)}</span>
+                                            <span>{news.likes}</span>
                                         </button>
 
                                         <button
