@@ -1,5 +1,5 @@
-import AIChat from "@/components/AIChat/AIChat";
-import NewsList from "@/components/NewsList/NewsList";
+import AIChat from "../components/AIChat/AIChat";
+import NewsList from "../components/NewsList/NewsList";
 
 export default function Home() {
   return (

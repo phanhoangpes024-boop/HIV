@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import './NewsList.css';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../../lib/supabase';
 
 const ITEMS_PER_PAGE = 10;
 
