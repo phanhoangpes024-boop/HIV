@@ -9,11 +9,12 @@ import { signOutAction } from '../../app/auth/auth-action';
 
 export default function Navbar() {
     const pathname = usePathname();
-    const [isExpanded, setIsExpanded] = useState(false);
-    const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(true);
     const [theme, setTheme] = useState('light');
     const [user, setUser] = useState(null);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [mobileNavVisible, setMobileNavVisible] = useState(true);
+    const [lastScrollY, setLastScrollY] = useState(0);
     const supabase = createClient();
 
     const handleLogout = async () => {
@@ -22,25 +23,47 @@ export default function Navbar() {
     };
 
     useEffect(() => {
-        // Initialize theme
         const savedTheme = localStorage.getItem('theme') || 'light';
         setTheme(savedTheme);
         document.documentElement.setAttribute('data-theme', savedTheme);
 
-        // Check user session
         const getUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             setUser(user);
         };
         getUser();
 
-        // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setUser(session?.user ?? null);
         });
 
         return () => subscription.unsubscribe();
     }, []);
+
+    // Handle scroll for mobile navbar
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+
+            if (currentScrollY < 50) {
+                // Ở đầu trang - luôn hiện
+                setMobileNavVisible(true);
+            } else if (currentScrollY > lastScrollY) {
+                // Scroll xuống - ẩn
+                setMobileNavVisible(false);
+            } else {
+                // Scroll lên - hiện
+                setMobileNavVisible(true);
+            }
+
+            setLastScrollY(currentScrollY);
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [lastScrollY]);
 
     const toggleTheme = () => {
         const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -70,88 +93,62 @@ export default function Navbar() {
 
     const navItems = [
         {
-            href: '/', text: 'Khám Phá', icon: (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            href: '/',
+            label: 'Khám phá',
+            icon: (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
             )
-        },
-        {
-            href: '/trending', text: 'Xu Hướng', icon: (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-            )
-        },
+        }
     ];
 
-    // Chỉ hiện nút Đăng nhập nếu chưa có user
-    if (!user) {
-        navItems.push({
-            href: '/signin', text: 'Đăng Nhập', icon: (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                </svg>
-            )
-        });
-    }
-
-    // Lấy chữ cái đầu và mã ngắn từ email
     const getUserDisplay = () => {
         if (!user) return { initial: '', shortId: '' };
         const email = user.email;
         const initial = email.charAt(0).toUpperCase();
-        // Lấy 4 ký tự cuối của id làm mã ngắn
         const shortId = user.id.substring(user.id.length - 4);
         return { initial, shortId };
     };
 
-    const { initial, shortId } = getUserDisplay();
+    const { initial } = getUserDisplay();
 
     return (
         <>
-            <div className="mobile-header">
-                <button
-                    className="toggle-btn"
-                    onClick={() => setIsMobileOpen(!isMobileOpen)}
-                    aria-label="Menu"
-                >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <line x1="3" y1="12" x2="21" y2="12" strokeWidth="2"></line>
-                        <line x1="3" y1="6" x2="21" y2="6" strokeWidth="2"></line>
-                        <line x1="3" y1="18" x2="21" y2="18" strokeWidth="2"></line>
-                    </svg>
-                </button>
-
-                <Link href="/" className="mobile-logo">
-                    <div className="logo-icon small">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
-                    </div>
-                    <span className="logo-text">InfectiXiv</span>
-                </Link>
-            </div>
-
-            <div
-                className={`navbar-overlay ${isMobileOpen ? 'active' : ''}`}
-                onClick={() => setIsMobileOpen(false)}
-            ></div>
-
-            <nav
-                className={`navbar ${isExpanded ? 'expanded' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}
-                onMouseEnter={() => window.innerWidth > 768 && setIsExpanded(true)}
-                onMouseLeave={() => window.innerWidth > 768 && setIsExpanded(false)}
-            >
+            {/* Desktop Navbar */}
+            <nav className={`navbar ${isExpanded ? 'expanded' : ''}`}>
                 <div className="navbar-header">
-                    <Link href="/" className="logo">
-                        <div className="logo-icon">
+                    <div className="header-content">
+                        <div 
+                            className="standalone-logo-icon"
+                            onClick={() => setIsExpanded(true)}
+                        >
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                             </svg>
                         </div>
-                        <span className="logo-text">InfectiXiv</span>
-                    </Link>
+
+                        <Link href="/" className="logo">
+                            <div className="logo-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                </svg>
+                            </div>
+                            <span className="logo-text">InfectiXiv</span>
+                        </Link>
+
+                        {isExpanded && (
+                            <button
+                                className="desktop-toggle-btn"
+                                onClick={() => setIsExpanded(false)}
+                                aria-label="Thu gọn menu"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 <div className="navbar-menu">
@@ -160,22 +157,45 @@ export default function Navbar() {
                             key={item.href}
                             href={item.href}
                             className={`nav-item ${pathname === item.href ? 'active' : ''}`}
-                            title={item.text}
-                            onClick={() => setIsMobileOpen(false)}
+                            title={item.label}
                         >
-                            {item.icon}
-                            <span className="nav-text">{item.text}</span>
+                            <div className="icon-wrapper">
+                                {item.icon}
+                            </div>
+                            <span className="nav-text">{item.label}</span>
                         </Link>
                     ))}
+                </div>
 
-                    {user && (
+                <div className="navbar-footer">
+                    <button onClick={toggleTheme} className="footer-btn" title="Chế độ tối">
+                        <div className="icon-wrapper">
+                            <svg className="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <circle cx="12" cy="12" r="5" strokeWidth="2"></circle>
+                                <line x1="12" y1="1" x2="12" y2="3" strokeWidth="2"></line>
+                                <line x1="12" y1="21" x2="12" y2="23" strokeWidth="2"></line>
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" strokeWidth="2"></line>
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" strokeWidth="2"></line>
+                                <line x1="1" y1="12" x2="3" y2="12" strokeWidth="2"></line>
+                                <line x1="21" y1="12" x2="23" y2="12" strokeWidth="2"></line>
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" strokeWidth="2"></line>
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" strokeWidth="2"></line>
+                            </svg>
+                            <svg className="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" strokeWidth="2"></path>
+                            </svg>
+                        </div>
+                        <span className="nav-text">Chế độ tối</span>
+                    </button>
+
+                    {user ? (
                         <div className="user-section">
                             <div
                                 className={`nav-item user-trigger ${userMenuOpen ? 'active' : ''}`}
                                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                             >
                                 <div className="user-avatar">{initial}</div>
-                                <span className="nav-text user-name">User #{shortId}</span>
+                                <span className="nav-text user-name">Tài khoản</span>
                             </div>
 
                             {userMenuOpen && (
@@ -184,7 +204,7 @@ export default function Navbar() {
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                         </svg>
-                                        Chỉnh sửa hồ sơ
+                                        Hồ sơ
                                     </button>
                                     <button
                                         className="dropdown-item logout"
@@ -198,12 +218,37 @@ export default function Navbar() {
                                 </div>
                             )}
                         </div>
+                    ) : (
+                        <Link href="/signin" className="nav-item">
+                            <div className="icon-wrapper">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                                </svg>
+                            </div>
+                            <span className="nav-text">Đăng nhập</span>
+                        </Link>
                     )}
                 </div>
+            </nav>
 
-                <div className="navbar-footer">
-                    <button onClick={toggleTheme} className="footer-btn" title="Chế độ tối">
-                        <svg className="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            {/* Mobile Bottom Navbar */}
+            <nav className={`mobile-navbar ${mobileNavVisible ? '' : 'hidden'}`}>
+                {navItems.map((item) => (
+                    <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`mobile-nav-item ${pathname === item.href ? 'active' : ''}`}
+                    >
+                        <div className="mobile-nav-icon">
+                            {item.icon}
+                        </div>
+                        <span className="mobile-nav-label">{item.label}</span>
+                    </Link>
+                ))}
+
+                <button onClick={toggleTheme} className="mobile-nav-item">
+                    <div className="mobile-nav-icon">
+                        <svg className="sun-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <circle cx="12" cy="12" r="5" strokeWidth="2"></circle>
                             <line x1="12" y1="1" x2="12" y2="3" strokeWidth="2"></line>
                             <line x1="12" y1="21" x2="12" y2="23" strokeWidth="2"></line>
@@ -214,19 +259,30 @@ export default function Navbar() {
                             <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" strokeWidth="2"></line>
                             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" strokeWidth="2"></line>
                         </svg>
-                        <svg className="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <svg className="moon-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" strokeWidth="2"></path>
                         </svg>
-                        <span className="nav-text">Chế độ tối</span>
-                    </button>
+                    </div>
+                    <span className="mobile-nav-label">Theme</span>
+                </button>
 
-                    <button className="footer-btn" title="Tiện ích">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span className="nav-text">Tiện ích</span>
+                {user ? (
+                    <button className="mobile-nav-item" onClick={() => setUserMenuOpen(!userMenuOpen)}>
+                        <div className="mobile-nav-icon">
+                            <div className="user-avatar">{initial}</div>
+                        </div>
+                        <span className="mobile-nav-label">Tôi</span>
                     </button>
-                </div>
+                ) : (
+                    <Link href="/signin" className="mobile-nav-item">
+                        <div className="mobile-nav-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                            </svg>
+                        </div>
+                        <span className="mobile-nav-label">Đăng nhập</span>
+                    </Link>
+                )}
             </nav>
         </>
     );

@@ -513,15 +513,7 @@ export default function NewsList() {
                                 </div>
                             </div>
 
-                            <div className="news-image">
-                                <img src={news.image} alt={news.title} />
-                                <div className="news-views">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                    {news.views.toLocaleString()}
-                                </div>
-                            </div>
+
                         </article>
                     </Link>
                 ))}
