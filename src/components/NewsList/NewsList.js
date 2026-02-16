@@ -10,518 +10,578 @@ const ITEMS_PER_PAGE = 10;
 
 export default function NewsList() {
     const router = useRouter();
-    const supabase = createClient(); // Tạo client mới
+    const supabase = createClient();
     const [newsData, setNewsData] = useState([]);
     const [allTags, setAllTags] = useState([]);
+    const [allInstitutions, setAllInstitutions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
-    const [activeFilter, setActiveFilter] = useState('latest');
+    const [sortBy, setSortBy] = useState('latest');
     const [likedArticles, setLikedArticles] = useState({});
     const [bookmarkedArticles, setBookmarkedArticles] = useState({});
-    const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [searchInput, setSearchInput] = useState('');
     const [selectedTags, setSelectedTags] = useState([]);
+    const [selectedInstitutions, setSelectedInstitutions] = useState([]);
     const [dateFilter, setDateFilter] = useState('all');
     const [user, setUser] = useState(null);
+    const [filterOpen, setFilterOpen] = useState(false);
+    const [totalCount, setTotalCount] = useState(0);
     const filterRef = useRef(null);
+    const searchTimeout = useRef(null);
 
-    // Kiểm tra user đã đăng nhập chưa
+    // Auth
     useEffect(() => {
         const getUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             setUser(user);
-
-            // Nếu user đã đăng nhập, lấy danh sách bài viết user đã like
             if (user) {
                 fetchUserLikes(user.id);
+                fetchUserBookmarks(user.id);
             }
         };
         getUser();
-
-        // Lắng nghe thay đổi trạng thái đăng nhập
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setUser(session?.user ?? null);
             if (session?.user) {
                 fetchUserLikes(session.user.id);
+                fetchUserBookmarks(session.user.id);
             } else {
                 setLikedArticles({});
+                setBookmarkedArticles({});
             }
         });
-
         return () => subscription.unsubscribe();
     }, []);
 
-    // Lấy danh sách bài viết user đã like
     const fetchUserLikes = async (userId) => {
-        const { data, error } = await supabase
+        const { data } = await supabase
             .from('article_likes')
             .select('article_id')
             .eq('user_id', userId);
-
-        if (data && !error) {
+        if (data) {
             const likes = {};
-            data.forEach(item => {
-                likes[item.article_id] = true;
-            });
+            data.forEach(i => { likes[i.article_id] = true; });
             setLikedArticles(likes);
         }
     };
 
+    const fetchUserBookmarks = async (userId) => {
+        const { data } = await supabase
+            .from('article_bookmarks')
+            .select('article_id')
+            .eq('user_id', userId);
+        if (data) {
+            const bookmarks = {};
+            data.forEach(i => { bookmarks[i.article_id] = true; });
+            setBookmarkedArticles(bookmarks);
+        }
+    };
+
+    // Fetch metadata
     useEffect(() => {
-        fetchArticles();
         fetchTags();
+        fetchInstitutions();
     }, []);
-
-    useEffect(() => {
-        function handleClickOutside(event) {
-            if (filterRef.current && !filterRef.current.contains(event.target)) {
-                setIsFilterOpen(false);
-            }
-        }
-
-        if (isFilterOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-            if (window.innerWidth <= 768) {
-                document.body.style.overflow = 'hidden';
-            }
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-            document.body.style.overflow = 'unset';
-        };
-    }, [isFilterOpen]);
 
     const fetchTags = async () => {
         const { data } = await supabase.from('tags').select('name').order('name');
         if (data) setAllTags(data.map(t => t.name));
     };
 
+    const fetchInstitutions = async () => {
+        const { data } = await supabase
+            .from('articles')
+            .select('institution');
+        if (data) {
+            const unique = [...new Set(data.map(a => a.institution).filter(Boolean))].sort();
+            setAllInstitutions(unique);
+        }
+    };
+
+    // Fetch articles
     const fetchArticles = async () => {
         try {
             setLoading(true);
-
             let query = supabase.from('articles').select(`
                 *,
-                article_authors (
-                    authors ( name )
-                ),
-                article_tags (
-                    tags ( name )
-                )
+                article_authors ( authors ( name ) ),
+                article_tags ( tags ( name ) )
             `);
 
             if (dateFilter === 'week') {
-                const weekAgo = new Date();
-                weekAgo.setDate(weekAgo.getDate() - 7);
-                query = query.gte('date', weekAgo.toISOString().split('T')[0]);
+                const d = new Date(); d.setDate(d.getDate() - 7);
+                query = query.gte('date', d.toISOString().split('T')[0]);
             } else if (dateFilter === 'month') {
-                const monthAgo = new Date();
-                monthAgo.setMonth(monthAgo.getMonth() - 1);
-                query = query.gte('date', monthAgo.toISOString().split('T')[0]);
+                const d = new Date(); d.setMonth(d.getMonth() - 1);
+                query = query.gte('date', d.toISOString().split('T')[0]);
+            } else if (dateFilter === 'year') {
+                const d = new Date(); d.setFullYear(d.getFullYear() - 1);
+                query = query.gte('date', d.toISOString().split('T')[0]);
             }
 
-            const { data: articles, error: articlesError } = await query;
-            if (articlesError) throw articlesError;
+            if (selectedInstitutions.length > 0) {
+                query = query.in('institution', selectedInstitutions);
+            }
 
-            let articlesWithDetails = articles.map(article => ({
-                ...article,
-                authors: article.article_authors?.map(a => a.authors?.name).filter(Boolean) || [],
-                tags: article.article_tags?.map(t => t.tags?.name).filter(Boolean) || [],
-                date: new Date(article.date).toLocaleDateString('vi-VN')
+            const { data: articles, error } = await query;
+            if (error) throw error;
+
+            let result = articles.map(a => ({
+                ...a,
+                authors: a.article_authors?.map(x => x.authors?.name).filter(Boolean) || [],
+                tags: a.article_tags?.map(x => x.tags?.name).filter(Boolean) || [],
+                dateFormatted: new Date(a.date).toLocaleDateString('vi-VN'),
+                dateRaw: a.date
             }));
 
+            // Filter by tags
             if (selectedTags.length > 0) {
-                articlesWithDetails = articlesWithDetails.filter(article =>
-                    article.tags.some(tag => selectedTags.includes(tag))
-                );
+                result = result.filter(a => a.tags.some(t => selectedTags.includes(t)));
             }
 
+            // Search
             if (searchTerm) {
-                articlesWithDetails = articlesWithDetails.filter(article =>
-                    article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    article.description.toLowerCase().includes(searchTerm.toLowerCase())
+                const q = searchTerm.toLowerCase();
+                result = result.filter(a =>
+                    a.title.toLowerCase().includes(q) ||
+                    a.description?.toLowerCase().includes(q) ||
+                    a.institution?.toLowerCase().includes(q) ||
+                    a.authors.some(au => au.toLowerCase().includes(q))
                 );
             }
 
-            if (activeFilter === 'latest') {
-                articlesWithDetails.sort((a, b) => new Date(b.date) - new Date(a.date));
-            } else if (activeFilter === 'liked') {
-                articlesWithDetails.sort((a, b) => b.likes - a.likes);
+            // Sort
+            if (sortBy === 'latest') {
+                result.sort((a, b) => new Date(b.dateRaw) - new Date(a.dateRaw));
+            } else if (sortBy === 'popular') {
+                result.sort((a, b) => b.likes - a.likes);
+            } else if (sortBy === 'views') {
+                result.sort((a, b) => b.views - a.views);
             }
 
-            setNewsData(articlesWithDetails);
-        } catch (error) {
-            console.error('Lỗi khi lấy dữ liệu:', error);
+            setTotalCount(result.length);
+            setNewsData(result);
+        } catch (err) {
+            console.error('Lỗi khi lấy dữ liệu:', err);
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        fetchArticles();
-    }, [activeFilter, searchTerm, selectedTags, dateFilter]);
+    useEffect(() => { fetchArticles(); }, [sortBy, searchTerm, selectedTags, selectedInstitutions, dateFilter]);
 
-    // Xử lý Like
-    // Xử lý Like (Optimistic UI)
+    // Debounce search
+    const handleSearchInput = (val) => {
+        setSearchInput(val);
+        clearTimeout(searchTimeout.current);
+        searchTimeout.current = setTimeout(() => {
+            setSearchTerm(val);
+            setCurrentPage(1);
+        }, 400);
+    };
+
+    // Close filter on outside click
+    useEffect(() => {
+        const handler = (e) => {
+            if (filterRef.current && !filterRef.current.contains(e.target)) setFilterOpen(false);
+        };
+        if (filterOpen) {
+            document.addEventListener('mousedown', handler);
+            if (window.innerWidth <= 768) document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => { document.removeEventListener('mousedown', handler); document.body.style.overflow = 'unset'; };
+    }, [filterOpen]);
+
+    // Like
     const toggleLike = async (e, articleId) => {
         e.preventDefault();
         e.stopPropagation();
-
-        // Kiểm tra user đã đăng nhập chưa
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-
-        if (!currentUser) {
-            router.push('/signin');
-            return;
-        }
+        const { data: { user: cur } } = await supabase.auth.getUser();
+        if (!cur) { router.push('/signin'); return; }
 
         const isLiked = likedArticles[articleId];
+        setLikedArticles(p => { const n = { ...p }; isLiked ? delete n[articleId] : n[articleId] = true; return n; });
+        setNewsData(p => p.map(a => a.id === articleId ? { ...a, likes: a.likes + (isLiked ? -1 : 1) } : a));
 
-        // 1. Cập nhật UI ngay lập tức (Optimistic Update)
-        setLikedArticles(prev => {
-            const newLikes = { ...prev };
-            if (isLiked) delete newLikes[articleId];
-            else newLikes[articleId] = true;
-            return newLikes;
-        });
-
-        setNewsData(prev => prev.map(article =>
-            article.id === articleId
-                ? { ...article, likes: article.likes + (isLiked ? -1 : 1) }
-                : article
-        ));
-
-        // 2. Gọi API xử lý ngầm
         try {
             if (isLiked) {
-                // Bỏ like
-                const { error } = await supabase
-                    .from('article_likes')
-                    .delete()
-                    .eq('user_id', currentUser.id)
-                    .eq('article_id', articleId);
-
+                const { error } = await supabase.from('article_likes').delete().eq('user_id', cur.id).eq('article_id', articleId);
                 if (error) throw error;
             } else {
-                // Thêm like
-                const { error } = await supabase
-                    .from('article_likes')
-                    .insert({
-                        user_id: currentUser.id,
-                        article_id: articleId
-                    });
-
+                const { error } = await supabase.from('article_likes').insert({ user_id: cur.id, article_id: articleId });
                 if (error) throw error;
             }
-        } catch (error) {
-            console.error('Lỗi khi like/unlike:', error);
-
-            // 3. Rollback nếu API lỗi
-            setLikedArticles(prev => {
-                const newLikes = { ...prev };
-                if (isLiked) newLikes[articleId] = true; // Khôi phục like cũ
-                else delete newLikes[articleId]; // Khôi phục chưa like
-                return newLikes;
-            });
-
-            setNewsData(prev => prev.map(article =>
-                article.id === articleId
-                    ? { ...article, likes: article.likes + (isLiked ? 1 : -1) } // Trả lại số like cũ
-                    : article
-            ));
+        } catch {
+            setLikedArticles(p => { const n = { ...p }; isLiked ? n[articleId] = true : delete n[articleId]; return n; });
+            setNewsData(p => p.map(a => a.id === articleId ? { ...a, likes: a.likes + (isLiked ? 1 : -1) } : a));
         }
     };
 
-    const toggleBookmark = (e, id) => {
+    const toggleBookmark = async (e, id) => {
         e.preventDefault();
         e.stopPropagation();
+        if (!user) { router.push('/signin'); return; }
 
-        if (!user) {
-            router.push('/signin');
-            return;
+        const isBookmarked = bookmarkedArticles[id];
+        setBookmarkedArticles(p => ({ ...p, [id]: !isBookmarked }));
+
+        try {
+            if (isBookmarked) {
+                const { error } = await supabase
+                    .from('article_bookmarks')
+                    .delete()
+                    .eq('user_id', user.id)
+                    .eq('article_id', id);
+                if (error) throw error;
+            } else {
+                const { error } = await supabase
+                    .from('article_bookmarks')
+                    .insert({ user_id: user.id, article_id: id });
+                if (error) throw error;
+            }
+        } catch (err) {
+            console.error('Bookmark error:', err);
+            // Rollback on error
+            setBookmarkedArticles(p => ({ ...p, [id]: isBookmarked }));
         }
-
-        setBookmarkedArticles(prev => ({
-            ...prev,
-            [id]: !prev[id]
-        }));
     };
 
+    // Pagination
     const totalPages = Math.ceil(newsData.length / ITEMS_PER_PAGE);
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const currentNews = newsData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
+    const activeFilterCount = selectedTags.length + selectedInstitutions.length + (dateFilter !== 'all' ? 1 : 0);
+
+    const clearAllFilters = () => {
+        setSelectedTags([]);
+        setSelectedInstitutions([]);
+        setDateFilter('all');
+        setSearchInput('');
+        setSearchTerm('');
+    };
+
     const renderPagination = () => {
         if (totalPages <= 1) return null;
-
         const pages = [];
-        const maxVisiblePages = 5;
-        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-        if (endPage - startPage < maxVisiblePages - 1) {
-            startPage = Math.max(1, endPage - maxVisiblePages + 1);
-        }
+        const max = 5;
+        let start = Math.max(1, currentPage - Math.floor(max / 2));
+        let end = Math.min(totalPages, start + max - 1);
+        if (end - start < max - 1) start = Math.max(1, end - max + 1);
 
         pages.push(
-            <button
-                key="prev"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-            >
-                ‹
+            <button key="prev" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="pg-btn pg-arrow">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
             </button>
         );
-
-        if (startPage > 1) {
-            pages.push(
-                <button key={1} onClick={() => setCurrentPage(1)}>1</button>
-            );
-            if (startPage > 2) {
-                pages.push(<span key="dots1" className="dots">...</span>);
-            }
+        if (start > 1) {
+            pages.push(<button key={1} onClick={() => setCurrentPage(1)} className="pg-btn">1</button>);
+            if (start > 2) pages.push(<span key="d1" className="pg-dots">...</span>);
         }
-
-        for (let i = startPage; i <= endPage; i++) {
-            pages.push(
-                <button
-                    key={i}
-                    className={currentPage === i ? 'active' : ''}
-                    onClick={() => setCurrentPage(i)}
-                >
-                    {i}
-                </button>
-            );
+        for (let i = start; i <= end; i++) {
+            pages.push(<button key={i} className={`pg-btn ${currentPage === i ? 'active' : ''}`} onClick={() => setCurrentPage(i)}>{i}</button>);
         }
-
-        if (endPage < totalPages) {
-            if (endPage < totalPages - 1) {
-                pages.push(<span key="dots2" className="dots">...</span>);
-            }
-            pages.push(
-                <button key={totalPages} onClick={() => setCurrentPage(totalPages)}>{totalPages}</button>
-            );
+        if (end < totalPages) {
+            if (end < totalPages - 1) pages.push(<span key="d2" className="pg-dots">...</span>);
+            pages.push(<button key={totalPages} onClick={() => setCurrentPage(totalPages)} className="pg-btn">{totalPages}</button>);
         }
-
         pages.push(
-            <button
-                key="next"
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-            >
-                ›
+            <button key="next" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="pg-btn pg-arrow">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
             </button>
         );
-
         return pages;
     };
 
-    if (loading) {
-        return (
-            <div className="news-container">
-                <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-                    Đang tải dữ liệu...
+    // === RENDER ===
+    return (
+        <div className="nl-container">
+            {/* Hero Search Bar */}
+            <div className="nl-hero">
+                <img src="/Logo.png" alt="THE EPIDEMIC HOUSE Logo" className="nl-hero-logo logo-light" />
+                <img src="/Dark Logo.png" alt="THE EPIDEMIC HOUSE Logo" className="nl-hero-logo logo-dark" />
+                <h1 className="nl-hero-title brand-font">THE EPIDEMIC HOUSE</h1>
+                <p className="nl-hero-subtitle">Tổ chức phi chính phủ cung cấp thông tin y tế mới nhất về dịch bệnh</p>
+                <div className="nl-search-bar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="nl-search-icon">
+                        <circle cx="11" cy="11" r="8" /><path strokeLinecap="round" d="M21 21l-4.35-4.35" />
+                    </svg>
+                    <input
+                        type="text"
+                        placeholder="Tìm kiếm bài viết, tác giả, tổ chức..."
+                        value={searchInput}
+                        onChange={(e) => handleSearchInput(e.target.value)}
+                        className="nl-search-input"
+                    />
+                    {searchInput && (
+                        <button className="nl-search-clear" onClick={() => { setSearchInput(''); setSearchTerm(''); }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" d="M18 6L6 18M6 6l12 12" /></svg>
+                        </button>
+                    )}
                 </div>
             </div>
-        );
-    }
 
-    return (
-        <div className="news-container">
-            <div className="news-header">
-                <h2 className="news-header-title">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="news-icon">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                    </svg>
-                    Tin tức
-                </h2>
-            </div>
+            {/* Toolbar */}
+            <div className="nl-toolbar">
+                <div className="nl-toolbar-left">
+                    <span className="nl-result-count">{totalCount.toLocaleString()} kết quả</span>
 
-            <div className="news-filters">
-                <div className="filter-left">
-                    <div className={`filter-overlay ${isFilterOpen ? 'active' : ''}`} onClick={() => setIsFilterOpen(false)}></div>
-                    <div className="filter-dropdown" ref={filterRef}>
-                        <button
-                            className="filter-trigger-btn"
-                            onClick={() => setIsFilterOpen(!isFilterOpen)}
-                        >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                    {/* Sort */}
+                    <div className="nl-sort-group">
+                        <span className="nl-sort-label">Sắp xếp:</span>
+                        {[
+                            { key: 'latest', label: 'Mới nhất' },
+                            { key: 'popular', label: 'Yêu thích' },
+                            { key: 'views', label: 'Lượt xem' },
+                        ].map(s => (
+                            <button
+                                key={s.key}
+                                className={`nl-sort-btn ${sortBy === s.key ? 'active' : ''}`}
+                                onClick={() => { setSortBy(s.key); setCurrentPage(1); }}
+                            >
+                                {s.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="nl-toolbar-right">
+                    {/* Filter Button */}
+                    <div className="nl-filter-wrap" ref={filterRef}>
+                        <button className={`nl-filter-btn ${filterOpen ? 'active' : ''}`} onClick={() => setFilterOpen(!filterOpen)}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                             </svg>
+                            Bộ lọc
+                            {activeFilterCount > 0 && <span className="nl-filter-badge">{activeFilterCount}</span>}
                         </button>
 
-                        {isFilterOpen && (
-                            <div className="filter-dropdown-menu">
-                                <input
-                                    type="text"
-                                    placeholder="Tìm kiếm chủ đề..."
-                                    className="filter-search-input"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-
-                                <div className="filter-section">
-                                    <div className="filter-section-header">
-                                        <span>Chủ đề</span>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                                        </svg>
+                        {filterOpen && (
+                            <>
+                                <div className="nl-filter-overlay" onClick={() => setFilterOpen(false)}></div>
+                                <div className="nl-filter-panel">
+                                    <div className="nl-filter-header">
+                                        <span className="nl-filter-title">Bộ lọc nâng cao</span>
+                                        {activeFilterCount > 0 && (
+                                            <button className="nl-filter-clear" onClick={clearAllFilters}>Xóa tất cả</button>
+                                        )}
                                     </div>
-                                    <div className="filter-tags">
-                                        {allTags.map(tag => (
-                                            <button
-                                                key={tag}
-                                                className={`filter-tag ${selectedTags.includes(tag) ? 'active' : ''}`}
-                                                onClick={() => {
-                                                    setSelectedTags(prev =>
-                                                        prev.includes(tag)
-                                                            ? prev.filter(t => t !== tag)
-                                                            : [...prev, tag]
-                                                    );
-                                                }}
-                                            >
-                                                {tag}
-                                            </button>
-                                        ))}
+
+                                    {/* Date Filter */}
+                                    <div className="nl-filter-section">
+                                        <div className="nl-filter-section-title">Thời gian xuất bản</div>
+                                        <div className="nl-filter-chips">
+                                            {[
+                                                { key: 'all', label: 'Tất cả' },
+                                                { key: 'week', label: '7 ngày' },
+                                                { key: 'month', label: '30 ngày' },
+                                                { key: 'year', label: '1 năm' },
+                                            ].map(d => (
+                                                <button
+                                                    key={d.key}
+                                                    className={`nl-chip ${dateFilter === d.key ? 'active' : ''}`}
+                                                    onClick={() => { setDateFilter(d.key); setCurrentPage(1); }}
+                                                >
+                                                    {d.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Tags */}
+                                    <div className="nl-filter-section">
+                                        <div className="nl-filter-section-title">Chủ đề</div>
+                                        <div className="nl-filter-chips">
+                                            {allTags.map(tag => (
+                                                <button
+                                                    key={tag}
+                                                    className={`nl-chip ${selectedTags.includes(tag) ? 'active' : ''}`}
+                                                    onClick={() => {
+                                                        setSelectedTags(p => p.includes(tag) ? p.filter(t => t !== tag) : [...p, tag]);
+                                                        setCurrentPage(1);
+                                                    }}
+                                                >
+                                                    {tag}
+                                                </button>
+                                            ))}
+                                            {allTags.length === 0 && <span className="nl-filter-empty">Chưa có chủ đề</span>}
+                                        </div>
+                                    </div>
+
+                                    {/* Institutions */}
+                                    <div className="nl-filter-section">
+                                        <div className="nl-filter-section-title">Tổ chức / Viện nghiên cứu</div>
+                                        <div className="nl-filter-chips">
+                                            {allInstitutions.map(inst => (
+                                                <button
+                                                    key={inst}
+                                                    className={`nl-chip ${selectedInstitutions.includes(inst) ? 'active' : ''}`}
+                                                    onClick={() => {
+                                                        setSelectedInstitutions(p => p.includes(inst) ? p.filter(i => i !== inst) : [...p, inst]);
+                                                        setCurrentPage(1);
+                                                    }}
+                                                >
+                                                    {inst}
+                                                </button>
+                                            ))}
+                                            {allInstitutions.length === 0 && <span className="nl-filter-empty">Chưa có tổ chức</span>}
+                                        </div>
                                     </div>
                                 </div>
-
-                                <div className="filter-section">
-                                    <div className="filter-section-header">
-                                        <span>Thời gian xuất bản</span>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </div>
-                                    <div className="filter-options">
-                                        <label className="filter-radio">
-                                            <input
-                                                type="radio"
-                                                name="dateFilter"
-                                                checked={dateFilter === 'all'}
-                                                onChange={() => setDateFilter('all')}
-                                            />
-                                            <span>Tất cả</span>
-                                        </label>
-                                        <label className="filter-radio">
-                                            <input
-                                                type="radio"
-                                                name="dateFilter"
-                                                checked={dateFilter === 'week'}
-                                                onChange={() => setDateFilter('week')}
-                                            />
-                                            <span>Tuần này</span>
-                                        </label>
-                                        <label className="filter-radio">
-                                            <input
-                                                type="radio"
-                                                name="dateFilter"
-                                                checked={dateFilter === 'month'}
-                                                onChange={() => setDateFilter('month')}
-                                            />
-                                            <span>Tháng này</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
+                            </>
                         )}
                     </div>
-
-                    <button
-                        className={`filter-btn ${activeFilter === 'latest' ? 'active' : ''}`}
-                        onClick={() => setActiveFilter('latest')}
-                    >
-                        Mới nhất
-                    </button>
-                    <button
-                        className={`filter-btn ${activeFilter === 'liked' ? 'active' : ''}`}
-                        onClick={() => setActiveFilter('liked')}
-                    >
-                        Yêu thích
-                    </button>
                 </div>
             </div>
 
-            <div className="news-list">
-                {currentNews.map((news) => (
-                    <Link href={`/news/${news.id}`} key={news.id} className="news-card-link">
-                        <article className="news-card">
-                            <div className="news-content">
-                                <h3 className="news-title">{news.title}</h3>
+            {/* Active Filters Display */}
+            {activeFilterCount > 0 && (
+                <div className="nl-active-filters">
+                    {dateFilter !== 'all' && (
+                        <span className="nl-active-chip">
+                            {dateFilter === 'week' ? '7 ngày' : dateFilter === 'month' ? '30 ngày' : '1 năm'}
+                            <button onClick={() => setDateFilter('all')}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" d="M18 6L6 18M6 6l12 12" /></svg>
+                            </button>
+                        </span>
+                    )}
+                    {selectedTags.map(t => (
+                        <span key={t} className="nl-active-chip">
+                            {t}
+                            <button onClick={() => setSelectedTags(p => p.filter(x => x !== t))}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" d="M18 6L6 18M6 6l12 12" /></svg>
+                            </button>
+                        </span>
+                    ))}
+                    {selectedInstitutions.map(i => (
+                        <span key={i} className="nl-active-chip inst">
+                            {i}
+                            <button onClick={() => setSelectedInstitutions(p => p.filter(x => x !== i))}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" d="M18 6L6 18M6 6l12 12" /></svg>
+                            </button>
+                        </span>
+                    ))}
+                    <button className="nl-clear-all" onClick={clearAllFilters}>Xóa tất cả</button>
+                </div>
+            )}
 
-                                <div className="news-meta">
-                                    <span className="news-date">{news.date}</span>
-                                    <span className="news-separator">•</span>
-                                    <span className="news-institution">{news.institution}</span>
-                                    <span className="news-separator">•</span>
-                                    <span className="news-authors">{news.authors.join(", ")}</span>
-                                </div>
+            {/* Loading */}
+            {loading && (
+                <div className="nl-loading">
+                    <div className="nl-spinner"></div>
+                    <span>Đang tải dữ liệu...</span>
+                </div>
+            )}
 
-                                <p className="news-description">{news.description}</p>
+            {/* Empty state */}
+            {!loading && currentNews.length === 0 && (
+                <div className="nl-empty">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <p>Không tìm thấy bài viết nào</p>
+                    <button className="nl-empty-btn" onClick={clearAllFilters}>Xóa bộ lọc</button>
+                </div>
+            )}
 
-                                <div className="news-tags">
-                                    {news.tags.map((tag) => (
-                                        <span key={tag} className="tag">#{tag}</span>
-                                    ))}
-                                </div>
+            {/* Article List */}
+            {!loading && (
+                <div className="nl-list">
+                    {currentNews.map((news, idx) => (
+                        <Link href={`/news/${news.id}`} key={news.id} className="nl-card-link">
+                            <article className="nl-card">
+                                {/* Left content */}
+                                <div className="nl-card-body">
+                                    {/* Meta line */}
+                                    <div className="nl-card-meta">
+                                        <span className="nl-card-institution">{news.institution}</span>
+                                        <span className="nl-card-dot">·</span>
+                                        <span className="nl-card-date">{news.dateFormatted}</span>
+                                    </div>
 
-                                <div className="news-footer">
-                                    <div className="news-actions">
+                                    {/* Title */}
+                                    <h3 className="nl-card-title">{news.title}</h3>
+
+                                    {/* Authors */}
+                                    <div className="nl-card-authors">
+                                        {news.authors.map((author, i) => (
+                                            <span key={author}>
+                                                <span className="nl-author-name">{author}</span>
+                                                {i < news.authors.length - 1 && <span className="nl-author-sep">, </span>}
+                                            </span>
+                                        ))}
+                                    </div>
+
+                                    {/* Description */}
+                                    <p className="nl-card-desc">{news.description}</p>
+
+                                    {/* Tags */}
+                                    <div className="nl-card-tags">
+                                        {news.tags.map(tag => (
+                                            <span key={tag} className="nl-tag">#{tag}</span>
+                                        ))}
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="nl-card-actions">
                                         <button
-                                            className={`action-btn like-btn ${likedArticles[news.id] ? 'liked' : ''}`}
+                                            className={`nl-action ${likedArticles[news.id] ? 'liked' : ''}`}
                                             onClick={(e) => toggleLike(e, news.id)}
+                                            title="Thích"
                                         >
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill={likedArticles[news.id] ? 'currentColor' : 'none'} stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill={likedArticles[news.id] ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                                             </svg>
                                             <span>{news.likes}</span>
                                         </button>
 
                                         <button
-                                            className={`action-btn bookmark-btn ${bookmarkedArticles[news.id] ? 'bookmarked' : ''}`}
+                                            className={`nl-action ${bookmarkedArticles[news.id] ? 'bookmarked' : ''}`}
                                             onClick={(e) => toggleBookmark(e, news.id)}
+                                            title="Đánh dấu"
                                         >
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill={bookmarkedArticles[news.id] ? 'currentColor' : 'none'} stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill={bookmarkedArticles[news.id] ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                                             </svg>
-                                            <span>Đánh dấu trang</span>
+                                            <span>Lưu</span>
                                         </button>
 
-                                        <button className="action-btn resource-btn">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        <div className="nl-action nl-views" title="Lượt xem">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                             </svg>
-                                            <span>Tài nguyên</span>
-                                        </button>
-
-                                        <button className="action-btn github-btn">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                                            </svg>
-                                            <span>3</span>
-                                        </button>
-                                    </div>
-
-                                    <div className="view-btn">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                                        </svg>
+                                            <span>{news.views?.toLocaleString()}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
+                                {/* Thumbnail */}
+                                {news.image && (
+                                    <div className="nl-card-thumb">
+                                        <img src={news.image} alt="" loading="lazy" />
+                                    </div>
+                                )}
+                            </article>
+                        </Link>
+                    ))}
+                </div>
+            )}
 
-                        </article>
-                    </Link>
-                ))}
-            </div>
-
-            <div className="pagination">
-                {renderPagination()}
-            </div>
+            {/* Pagination */}
+            {!loading && totalPages > 1 && (
+                <div className="nl-pagination">
+                    <div className="nl-pg-info">
+                        Trang {currentPage} / {totalPages}
+                    </div>
+                    <div className="nl-pg-buttons">
+                        {renderPagination()}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

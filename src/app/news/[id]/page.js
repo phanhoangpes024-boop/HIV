@@ -1,144 +1,190 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
+import NewsDetailClient from './NewsDetailClient';
 import './NewsDetail.css';
 
-// Tạo Supabase client cho server-side
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-// Hàm lấy tất cả bài viết để generate static paths
 async function getAllArticles() {
-    const { data, error } = await supabase
-        .from('articles')
-        .select('id');
-    
-    if (error) {
-        console.error('Lỗi khi lấy danh sách bài viết:', error);
-        return [];
-    }
-    
+    const { data } = await supabase.from('articles').select('id');
     return data || [];
 }
 
-// Hàm lấy chi tiết một bài viết
 async function getArticleById(id) {
-    // Lấy thông tin bài viết
-    const { data: article, error: articleError } = await supabase
-        .from('articles')
-        .select('*')
-        .eq('id', id)
-        .single();
+    const { data: article, error } = await supabase
+        .from('articles').select('*').eq('id', id).single();
+    if (error || !article) return null;
 
-    if (articleError || !article) {
-        return null;
-    }
-
-    // Lấy tác giả
     const { data: authorData } = await supabase
-        .from('article_authors')
-        .select('author_id, authors(name)')
-        .eq('article_id', id);
+        .from('article_authors').select('author_id, authors(name)').eq('article_id', id);
+    const authors = authorData?.map(i => i.authors.name) || [];
 
-    const authors = authorData?.map(item => item.authors.name) || [];
-
-    // Lấy tags
     const { data: tagData } = await supabase
-        .from('article_tags')
-        .select('tag_id, tags(name)')
-        .eq('article_id', id);
-
-    const tags = tagData?.map(item => item.tags.name) || [];
+        .from('article_tags').select('tag_id, tags(name)').eq('article_id', id);
+    const tags = tagData?.map(i => i.tags.name) || [];
 
     return {
-        ...article,
-        authors,
-        tags,
-        date: new Date(article.date).toLocaleDateString('vi-VN')
+        ...article, authors, tags,
+        dateFormatted: new Date(article.date).toLocaleDateString('vi-VN', {
+            year: 'numeric', month: 'long', day: 'numeric'
+        }),
+        dateISO: article.date,
     };
 }
 
-// Generate static paths cho tất cả bài viết
 export async function generateStaticParams() {
     const articles = await getAllArticles();
-    return articles.map((article) => ({
-        id: article.id.toString(),
-    }));
+    return articles.map((a) => ({ id: a.id.toString() }));
 }
 
-// Component hiển thị trang chi tiết
+export async function generateMetadata({ params }) {
+    const { id } = await params;
+    const article = await getArticleById(id);
+    if (!article) return { title: 'Không tìm thấy' };
+    return {
+        title: `${article.title} | THE EPIDEMIC HOUSE`,
+        description: article.description,
+    };
+}
+
 export default async function NewsDetailPage({ params }) {
     const { id } = await params;
     const news = await getArticleById(id);
-
-    if (!news) {
-        notFound();
-    }
+    if (!news) notFound();
 
     return (
-        <div className="article-container">
-            <Link href="/" className="back-link">
-                <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Quay lại
-            </Link>
+        <div className="nd-layout">
+            <article className="nd-article">
+                {/* Breadcrumb */}
+                <nav className="nd-breadcrumb">
+                    <Link href="/" className="nd-breadcrumb-link">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1" />
+                        </svg>
+                        Trang chủ
+                    </Link>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="nd-breadcrumb-sep">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                    <span className="nd-breadcrumb-current">Chi tiết bài viết</span>
+                </nav>
 
-            <article className="article-content">
-                <div className="article-header">
-                    <div className="article-meta-top">
-                        <span className="institution">{news.institution}</span>
-                        <span className="date">{news.date}</span>
+                {/* Header */}
+                <header className="nd-header">
+                    <div className="nd-institution-badge">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        {news.institution}
                     </div>
 
-                    <h1 className="article-title">{news.title}</h1>
+                    <h1 className="nd-title">{news.title}</h1>
 
-                    <div className="article-authors">
-                        <span>Tác giả: </span>
-                        {news.authors.join(", ")}
-                    </div>
+                    {news.authors.length > 0 && (
+                        <div className="nd-authors">
+                            {news.authors.map((author, i) => (
+                                <span key={author}>
+                                    <span className="nd-author-name">{author}</span>
+                                    {i < news.authors.length - 1 && ', '}
+                                </span>
+                            ))}
+                        </div>
+                    )}
 
-                    <div className="article-tags">
-                        {news.tags.map((tag) => <span key={tag} className="tag">#{tag}</span>)}
-                    </div>
-                </div>
-
-                <div className="article-image">
-                    <img src={news.image} alt={news.title} />
-                </div>
-
-                <div
-                    className="article-body"
-                    dangerouslySetInnerHTML={{ __html: news.content }}
-                />
-
-                <div className="article-footer">
-                    <div className="stats">
-                        <span className="stat">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <div className="nd-meta-bar">
+                        <div className="nd-meta-item">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                <line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" />
+                                <line x1="3" y1="10" x2="21" y2="10" />
+                            </svg>
+                            <time dateTime={news.dateISO}>{news.dateFormatted}</time>
+                        </div>
+                        <div className="nd-meta-divider"></div>
+                        <div className="nd-meta-item">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
-                            {news.views.toLocaleString()} lượt xem
-                        </span>
-                        <span className="stat">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            {news.views?.toLocaleString()} lượt xem
+                        </div>
+                        <div className="nd-meta-divider"></div>
+                        <div className="nd-meta-item">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                             </svg>
                             {news.likes} lượt thích
-                        </span>
+                        </div>
                     </div>
-                </div>
+
+                    {news.tags.length > 0 && (
+                        <div className="nd-tags">
+                            {news.tags.map(tag => (
+                                <span key={tag} className="nd-tag">#{tag}</span>
+                            ))}
+                        </div>
+                    )}
+                </header>
+
+                {/* Abstract */}
+                {news.description && (
+                    <section className="nd-abstract">
+                        <h2 className="nd-section-label">Tóm tắt</h2>
+                        <p className="nd-abstract-text">{news.description}</p>
+                    </section>
+                )}
+
+                {/* Image */}
+                {news.image && (
+                    <figure className="nd-figure">
+                        <img src={news.image} alt={news.title} className="nd-image" />
+                    </figure>
+                )}
+
+                {/* Body */}
+                <section className="nd-body" dangerouslySetInnerHTML={{ __html: news.content }} />
+
+                {/* Footer */}
+                <footer className="nd-footer">
+                    <div className="nd-footer-meta">
+                        <div className="nd-footer-item">
+                            <span className="nd-footer-label">Tổ chức</span>
+                            <span className="nd-footer-value">{news.institution}</span>
+                        </div>
+                        <div className="nd-footer-item">
+                            <span className="nd-footer-label">Ngày xuất bản</span>
+                            <span className="nd-footer-value">{news.dateFormatted}</span>
+                        </div>
+                        {news.authors.length > 0 && (
+                            <div className="nd-footer-item">
+                                <span className="nd-footer-label">Tác giả</span>
+                                <span className="nd-footer-value">{news.authors.join(', ')}</span>
+                            </div>
+                        )}
+                        {news.tags.length > 0 && (
+                            <div className="nd-footer-item">
+                                <span className="nd-footer-label">Chủ đề</span>
+                                <span className="nd-footer-value">{news.tags.join(', ')}</span>
+                            </div>
+                        )}
+                    </div>
+                    <div className="nd-footer-nav">
+                        <Link href="/" className="nd-back-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            Quay lại danh sách bài viết
+                        </Link>
+                    </div>
+                </footer>
             </article>
+
+            {/* Sidebar — Client Component để xử lý tương tác */}
+            <NewsDetailClient articleId={news.id} views={news.views} likes={news.likes} dateFormatted={news.dateFormatted} />
         </div>
     );
 }

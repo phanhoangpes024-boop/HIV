@@ -5,6 +5,7 @@
 }
 
 :root {
+  --font-cinzel: "Cinzel", serif;
   --bg-primary: #f9fafb;
   --bg-secondary: #ffffff;
   --bg-tertiary: #f3f4f6;
@@ -13,6 +14,12 @@
   --border-color: #e5e7eb;
   --accent-color: #ef4444;
   --accent-hover: #dc2626;
+}
+
+.brand-font {
+  font-family: var(--font-cinzel), serif;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 [data-theme="dark"] {
@@ -34,8 +41,7 @@ body {
 }
 
 .main-content {
-  margin-left: 70px;
-  /* Width của navbar collapsed */
+  margin-left: 220px;
   min-height: 100vh;
   transition: margin-left 0.3s ease;
 }
@@ -44,6 +50,5 @@ body {
   .main-content {
     margin-left: 0;
     padding-top: 0px;
-    /* Điều chỉnh khoảng cách cho cân đối */
   }
 }
