@@ -218,9 +218,23 @@
 
 .nd-body img {
     max-width: 100%;
-    height: auto;
     border-radius: 8px;
     margin: 1rem 0;
+}
+
+/* Respect inline width/height from Quill resize plugin */
+.nd-body img:not([style*="width"]) {
+    height: auto;
+}
+
+/* Preserve line breaks: empty <p> tags from Quill editor */
+.nd-body p:empty,
+.nd-body p:has(> br:only-child) {
+    min-height: 1.25em;
+}
+
+.nd-body .ql-editor p {
+    margin-bottom: 1.25rem;
 }
 
 .nd-body table {
