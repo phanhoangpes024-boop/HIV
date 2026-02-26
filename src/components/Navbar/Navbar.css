@@ -1,0 +1,420 @@
+/* ========================================
+   DESKTOP SIDEBAR — Claude-style collapsible
+   ======================================== */
+
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 260px;
+    background-color: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar.collapsed {
+    width: 60px;
+}
+
+.sidebar-header {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+}
+
+
+.sidebar-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 0.5rem;
+}
+
+/* Brand text (replaces old logo) */
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: var(--text-primary);
+    overflow: hidden;
+    flex: 1;
+    min-width: 0;
+    margin-left: 0.75rem;
+    /* Align with icons below */
+}
+
+.sidebar-brand-text {
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.sidebar.collapsed .sidebar-brand {
+    display: none;
+}
+
+/* Toggle button */
+.sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-toggle:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.sidebar.collapsed .sidebar-header-row {
+    justify-content: center;
+    width: 100%;
+}
+
+/* ===== NAVIGATION LINKS ===== */
+.sidebar-nav {
+    flex: 1;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+    outline: none;
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.sidebar-link:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.sidebar-link.active {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.sidebar-link-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.sidebar-link-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 1;
+    transition: opacity 0.15s ease;
+}
+
+/* Collapsed: xóa text khỏi layout hoàn toàn — width:0 vẫn là flex item */
+.sidebar.collapsed .sidebar-link-text {
+    display: none;
+}
+
+.sidebar.collapsed .sidebar-link {
+    justify-content: center;
+    padding: 0.5rem;
+    width: 36px;
+    height: 36px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    gap: 0;
+    /* xóa gap bất kỳ còn sót */
+}
+
+.sidebar.collapsed .sidebar-nav {
+    padding: 0.75rem 0;
+    /* bỏ padding ngang, link tự căn giữa */
+    align-items: center;
+    /* quan trọng: ngăn flex stretch gây lệch */
+}
+
+/* ===== FOOTER ===== */
+.sidebar-footer {
+    padding: 0.75rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sidebar.collapsed .sidebar-footer {
+    padding: 0.75rem 0;
+    /* bỏ padding ngang, icons tự căn giữa qua margin auto */
+    align-items: center;
+    /* ngăn flex stretch */
+}
+
+/* ===== THEME TOGGLE ===== */
+.theme-toggle {
+    color: var(--text-secondary);
+}
+
+.moon-icon {
+    display: none;
+}
+
+[data-theme="dark"] .sun-icon {
+    display: none;
+}
+
+[data-theme="dark"] .moon-icon {
+    display: block;
+}
+
+/* ===== USER SECTION ===== */
+.user-section {
+    position: relative;
+    width: 100%;
+}
+
+.user-trigger {
+    cursor: pointer;
+}
+
+.sidebar-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ef4444, #f87171);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+}
+
+/* ===== DROPDOWN ===== */
+.sidebar-dropdown {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    margin-bottom: 6px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    z-index: 1001;
+    overflow: hidden;
+    animation: slideUp 0.15s ease;
+}
+
+.sidebar.collapsed .sidebar-dropdown {
+    left: 60px;
+    right: auto;
+    width: 220px;
+    bottom: 0;
+}
+
+[data-theme="dark"] .sidebar-dropdown {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.sidebar-dropdown-header {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.875rem 1rem;
+}
+
+.sidebar-dropdown-email {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar-dropdown-divider {
+    height: 1px;
+    background-color: var(--border-color);
+}
+
+.sidebar-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.625rem 1rem;
+    width: 100%;
+    border: none;
+    background: none;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    outline: none;
+}
+
+.sidebar-dropdown-item:hover {
+    background-color: var(--bg-tertiary);
+}
+
+.sidebar-dropdown-item.logout {
+    color: #ef4444;
+}
+
+.sidebar-dropdown-item.logout:hover {
+    background-color: rgba(239, 68, 68, 0.08);
+}
+
+/* ========================================
+   MOBILE NAVBAR — Giữ nguyên
+   ======================================== */
+
+.mobile-navbar {
+    display: none;
+}
+
+.user-avatar-mobile {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ef4444, #f87171);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.65rem;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        display: none;
+    }
+
+    .mobile-navbar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background-color: var(--bg-secondary);
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        padding: 0 1rem;
+        z-index: 1000;
+        transition: transform 0.3s ease;
+    }
+
+    .mobile-navbar.hidden {
+        transform: translateY(100%);
+    }
+
+    .mobile-nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+        padding: 0.5rem;
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: all 0.2s ease;
+        outline: none;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font-family: inherit;
+        min-width: 60px;
+    }
+
+    .mobile-nav-item:active {
+        transform: scale(0.95);
+    }
+
+    .mobile-nav-item.active {
+        color: var(--accent-color);
+    }
+
+    .mobile-nav-icon {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .mobile-nav-label {
+        font-size: 0.7rem;
+        font-weight: 500;
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+        padding-bottom: 80px;
+    }
+}
+
+/* Ẩn các class cũ không dùng nữa */
+.mobile-header,
+.toggle-btn,
+.navbar-overlay,
+.sidebar-logo-icon,
+.logo-img,
+.sidebar-logo {
+    display: none;
+}

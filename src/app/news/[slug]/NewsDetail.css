@@ -1,0 +1,460 @@
+/* =============================================
+   NEWS DETAIL — Professional Medical Article
+   PMC / alphaXiv style
+   ============================================= */
+
+/* === LAYOUT === */
+.nd-layout {
+    display: flex;
+    gap: 0;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    align-items: flex-start;
+}
+
+.nd-article {
+    flex: 1;
+    min-width: 0;
+    max-width: 760px;
+    padding: 2rem 0;
+}
+
+/* === BREADCRUMB === */
+/* Moved to components/Breadcrumb/Breadcrumb.css */
+
+/* === HEADER === */
+.nd-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Institution badge */
+.nd-institution-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.3rem 0.75rem;
+    background-color: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.15);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent-color);
+    margin-bottom: 1rem;
+}
+
+[data-theme="dark"] .nd-institution-badge {
+    background-color: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.25);
+}
+
+/* Title */
+.nd-title {
+    font-size: 1.75rem;
+    font-weight: 750;
+    color: var(--text-primary);
+    line-height: 1.35;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.875rem;
+}
+
+/* Authors */
+.nd-authors {
+    font-size: 0.925rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+}
+
+.nd-author-name {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* Meta bar */
+.nd-meta-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.nd-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.nd-meta-divider {
+    width: 1px;
+    height: 14px;
+    background-color: var(--border-color);
+}
+
+/* Tags */
+.nd-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.nd-tag {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+    font-size: 0.775rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* === ABSTRACT === */
+.nd-abstract {
+    margin-bottom: 2rem;
+    padding: 1.25rem;
+    background-color: var(--bg-tertiary);
+    border-left: 3px solid var(--accent-color);
+    border-radius: 0 8px 8px 0;
+}
+
+.nd-section-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent-color);
+    margin-bottom: 0.5rem;
+}
+
+.nd-abstract-text {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--text-primary);
+}
+
+/* === FIGURE / IMAGE === */
+.nd-figure {
+    margin: 0 0 2rem;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.nd-image {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* === ARTICLE BODY === */
+.nd-body {
+    font-size: 1.05rem;
+    line-height: 1.85;
+    color: var(--text-primary);
+    margin-bottom: 2.5rem;
+}
+
+.nd-body h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-top: 2.25rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.nd-body h3 {
+    font-size: 1.1rem;
+    font-weight: 650;
+    color: var(--text-primary);
+    margin-top: 1.75rem;
+    margin-bottom: 0.625rem;
+}
+
+.nd-body p {
+    margin-bottom: 1.25rem;
+}
+
+.nd-body ul,
+.nd-body ol {
+    margin-bottom: 1.25rem;
+    padding-left: 1.5rem;
+}
+
+.nd-body li {
+    margin-bottom: 0.5rem;
+    line-height: 1.7;
+}
+
+.nd-body li::marker {
+    color: var(--accent-color);
+}
+
+.nd-body a {
+    color: var(--accent-color);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.nd-body a:hover {
+    opacity: 0.8;
+}
+
+.nd-body blockquote {
+    margin: 1.5rem 0;
+    padding: 1rem 1.25rem;
+    border-left: 3px solid var(--accent-color);
+    background-color: var(--bg-tertiary);
+    border-radius: 0 6px 6px 0;
+    font-style: italic;
+    color: var(--text-secondary);
+}
+
+.nd-body img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+.nd-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+}
+
+.nd-body th,
+.nd-body td {
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--border-color);
+    text-align: left;
+}
+
+.nd-body th {
+    background-color: var(--bg-tertiary);
+    font-weight: 600;
+}
+
+/* === FOOTER === */
+.nd-footer {
+    border-top: 1px solid var(--border-color);
+    padding-top: 1.75rem;
+}
+
+.nd-footer-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+    padding: 1.25rem;
+    background-color: var(--bg-tertiary);
+    border-radius: 10px;
+}
+
+.nd-footer-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.nd-footer-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+}
+
+.nd-footer-value {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.nd-footer-nav {
+    padding-top: 0.5rem;
+}
+
+.nd-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.15s;
+}
+
+.nd-back-btn:hover {
+    border-color: var(--text-primary);
+    color: var(--text-primary);
+    background-color: var(--bg-tertiary);
+}
+
+/* === SIDEBAR === */
+.nd-sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    padding-top: 2rem;
+    margin-left: 2rem;
+    border-left: 1px solid var(--border-color);
+    padding-left: 1.5rem;
+}
+
+.nd-sidebar-sticky {
+    position: sticky;
+    top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.nd-sidebar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+}
+
+.nd-sidebar-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+}
+
+/* Sidebar actions */
+.nd-sidebar-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.nd-sidebar-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.625rem;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.825rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.15s;
+    font-family: inherit;
+    outline: none;
+    text-align: left;
+}
+
+.nd-sidebar-btn:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.nd-sidebar-btn.active {
+    color: var(--accent-color);
+}
+
+.nd-sidebar-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Sidebar info */
+.nd-sidebar-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.nd-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.nd-info-row:last-child {
+    border-bottom: none;
+}
+
+.nd-info-row dt {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.nd-info-row dd {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 960px) {
+    .nd-sidebar {
+        display: none;
+    }
+
+    .nd-article {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .nd-layout {
+        padding: 0 1rem;
+    }
+
+    .nd-article {
+        padding: 1.25rem 0;
+    }
+
+    .nd-breadcrumb {
+        margin-bottom: 1.25rem;
+    }
+
+    .nd-title {
+        font-size: 1.35rem;
+    }
+
+    .nd-meta-bar {
+        gap: 0.5rem;
+    }
+
+    .nd-meta-divider {
+        display: none;
+    }
+
+    .nd-abstract {
+        padding: 1rem;
+    }
+
+    .nd-body {
+        font-size: 1rem;
+        line-height: 1.75;
+    }
+
+    .nd-body h2 {
+        font-size: 1.15rem;
+    }
+
+    .nd-footer-meta {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        padding: 1rem;
+    }
+}
