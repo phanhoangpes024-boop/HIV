@@ -157,6 +157,8 @@
     line-height: 1.85;
     color: var(--text-primary);
     margin-bottom: 2.5rem;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
 }
 
 .nd-body h2 {

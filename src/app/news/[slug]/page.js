@@ -208,8 +208,8 @@ export default async function NewsDetailPage({ params }) {
                     </figure>
                 )}
 
-                {/* Body */}
-                <section className="nd-body" dangerouslySetInnerHTML={{ __html: news.content }} />
+                {/* Body — replace &nbsp; with regular spaces to fix text wrapping */}
+                <section className="nd-body" dangerouslySetInnerHTML={{ __html: news.content?.replace(/&nbsp;/g, ' ') }} />
 
                 {/* Footer */}
                 <footer className="nd-footer">
