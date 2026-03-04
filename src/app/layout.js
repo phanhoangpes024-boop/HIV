@@ -1,6 +1,8 @@
 import { Playfair_Display, Noto_Serif } from "next/font/google";
 import "./globals.css";
 import Navbar from "../components/Navbar/Navbar";
+import ProgressBar from "../components/ProgressBar";
+import { Suspense } from "react";
 
 const playfair = Playfair_Display({
   subsets: ["latin", "vietnamese"],
@@ -88,6 +90,9 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body>
+        <Suspense fallback={null}>
+          <ProgressBar />
+        </Suspense>
         <Navbar />
         <main className="main-content">
           {children}
