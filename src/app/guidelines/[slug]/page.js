@@ -3,9 +3,12 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import Breadcrumb from '../../../components/Breadcrumb/Breadcrumb';
 import { getIdFromSlug, createSlugWithId } from '../../../lib/slugify';
+import GuidelineSections from './GuidelineSections';
 import '../Guidelines.css';
 import '../../news/[slug]/NewsDetail.css';
 
+// ── ISR: cache trang 1 giờ, tự revalidate sau đó ──────────────────────────
+export const revalidate = 3600;
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -20,20 +23,15 @@ const sectionLabels = {
     research: { label: 'Nghiên cứu mới', icon: '🧪', color: '#ef4444' },
 };
 
-// ====================================================
-// HÀM QUAN TRỌNG: Xử lý nội dung HTML từ editor
-// Editor lưu &nbsp; giữa mọi từ -> trình duyệt không 
-// thể xuống dòng -> chữ bị đứt giữa chừng
-// Giải pháp: thay &nbsp; thành dấu cách thường
-// ====================================================
+// ── Xử lý &nbsp; từ Quill ────────────────────────────────────────────────
 function cleanHtml(html) {
     if (!html) return '';
     return html
-        // Thay &nbsp; thành dấu cách thường
         .replace(/&nbsp;/g, ' ')
-        // Thay ký tự Unicode non-breaking space (U+00A0)
         .replace(/\u00A0/g, ' ');
 }
+
+// ── DB queries ────────────────────────────────────────────────────────────
 
 async function getDisease(id) {
     const { data, error } = await supabase
@@ -57,19 +55,32 @@ async function getGuidelines(diseaseId) {
     return data || [];
 }
 
+// FIX: lọc hoàn toàn trên server, không tải bulk về rồi filter ở JS
 async function getRelatedArticles(diseaseName) {
-    const keywords = diseaseName.toLowerCase().split(/[\s/]+/);
+    const keywords = (diseaseName || '')
+        .toLowerCase()
+        .split(/[\s/]+/)
+        .filter(kw => kw.length > 2)
+        .slice(0, 3); // chỉ dùng tối đa 3 keyword
+
+    if (keywords.length === 0) return [];
+
+    // Xây filter OR: title hoặc description chứa keyword
+    const filterStr = keywords
+        .flatMap(kw => [`title.ilike.%${kw}%`, `description.ilike.%${kw}%`])
+        .join(',');
+
     const { data } = await supabase
         .from('articles')
         .select('id, title, description, date, institution')
+        .or(filterStr)
         .order('date', { ascending: false })
-        .limit(50);
-    if (!data) return [];
-    return data.filter(article => {
-        const text = `${article.title} ${article.description}`.toLowerCase();
-        return keywords.some(kw => kw.length > 2 && text.includes(kw));
-    }).slice(0, 6);
+        .limit(6); // chỉ lấy đúng 6 cần dùng
+
+    return data || [];
 }
+
+// ── Metadata ──────────────────────────────────────────────────────────────
 
 export async function generateMetadata({ params }) {
     const { slug } = await params;
@@ -101,13 +112,21 @@ export async function generateMetadata({ params }) {
     };
 }
 
+// ── Page ──────────────────────────────────────────────────────────────────
+
 export default async function DiseasePage({ params }) {
     const { slug } = await params;
     const id = getIdFromSlug(slug);
-    const disease = await getDisease(id);
+
+    // FIX: chạy song song thay vì tuần tự
+    const [disease, guidelines] = await Promise.all([
+        getDisease(id),
+        getGuidelines(id),
+    ]);
+
     if (!disease) notFound();
 
-    const guidelines = await getGuidelines(id);
+    // Chỉ fetch related sau khi có disease (cần tên), nhưng không block render chính
     const relatedArticles = await getRelatedArticles(disease.name);
 
     const jsonLd = {
@@ -163,61 +182,8 @@ export default async function DiseasePage({ params }) {
                 </nav>
             )}
 
-            {/* Sections */}
-            <div className="gd-sections">
-                {guidelines.map((g, idx) => {
-                    const sec = sectionLabels[g.section_type] || sectionLabels.overview;
-                    const linkedArticles = g.guideline_articles?.map(ga => ga.articles).filter(Boolean) || [];
-
-                    return (
-                        <section key={g.id} id={`section-${g.id}`} className="gd-section">
-                            <div className="gd-section-header">
-                                <div className="gd-section-badge" style={{ backgroundColor: sec.color + '12', color: sec.color, borderColor: sec.color + '30' }}>
-                                    {sec.label}
-                                </div>
-                                <h2 className="gd-section-title">
-                                    <span className="gd-section-num">{idx + 1}.</span>
-                                    {g.title}
-                                </h2>
-                                {g.source_name && (
-                                    <div className="gd-section-source">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Nguồn: {g.source_name}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* NỘI DUNG: dùng cleanHtml() để xóa &nbsp; trước khi render */}
-                            {g.content && (
-                                <div className="nd-body" dangerouslySetInnerHTML={{ __html: cleanHtml(g.content) }} />
-                            )}
-
-                            {g.external_url && (
-                                <a href={g.external_url} target="_blank" rel="noopener noreferrer" className="gd-external-link">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                    </svg>
-                                    Xem tài liệu gốc
-                                </a>
-                            )}
-
-                            {linkedArticles.length > 0 && (
-                                <div className="gd-linked">
-                                    <h4 className="gd-linked-title">Bài viết liên quan trên <span className="brand-font" style={{ fontSize: '0.9em' }}>THE EPIDEMIC HOUSE</span></h4>
-                                    {linkedArticles.map(a => (
-                                        <Link href={`/news/${createSlugWithId(a.title, a.id)}`} key={a.id} className="gd-linked-card">
-                                            <span className="gd-linked-name">{a.title}</span>
-                                            <span className="gd-linked-meta">{a.institution} · {new Date(a.date).toLocaleDateString('vi-VN')}</span>
-                                        </Link>
-                                    ))}
-                                </div>
-                            )}
-                        </section>
-                    );
-                })}
-            </div>
+            {/* FIX: Sections giờ lazy-render qua client component */}
+            <GuidelineSections sections={guidelines} />
 
             {/* Related */}
             {relatedArticles.length > 0 && (

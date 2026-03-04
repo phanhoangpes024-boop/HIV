@@ -256,6 +256,49 @@
 .nd-body th {
     background-color: var(--bg-tertiary);
     font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* === DARK MODE: Override tất cả inline styles từ Quill editor lưu trong DB ===
+   Dùng selector * để bắt toàn bộ elements có inline style bên trong nd-body,
+   bao gồm span, p, td, th, em, strong, v.v. */
+[data-theme="dark"] .nd-body * {
+    color: inherit !important;
+    background-color: transparent !important;
+    background: transparent !important;
+}
+
+/* Giữ màu chữ chính cho toàn bộ nd-body */
+[data-theme="dark"] .nd-body {
+    color: var(--text-primary) !important;
+}
+
+/* Khôi phục màu link trong dark mode */
+[data-theme="dark"] .nd-body a,
+[data-theme="dark"] .nd-body a * {
+    color: var(--accent-color) !important;
+}
+
+/* === DARK MODE: Fix table === */
+[data-theme="dark"] .nd-body table {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .nd-body th,
+[data-theme="dark"] .nd-body td {
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+    background-color: transparent !important;
+}
+
+[data-theme="dark"] .nd-body th {
+    background-color: var(--bg-tertiary) !important;
+}
+
+/* Khôi phục màu accent-color text (bold, highlight) */
+[data-theme="dark"] .nd-body strong,
+[data-theme="dark"] .nd-body b {
+    color: inherit !important;
 }
 
 /* === FOOTER === */

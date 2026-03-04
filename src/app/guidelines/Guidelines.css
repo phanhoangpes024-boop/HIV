@@ -346,6 +346,10 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     max-width: 100%;
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
 }
 
 .gd-section .nd-body table thead,
@@ -361,6 +365,51 @@
 .gd-section .nd-body table th,
 .gd-section .nd-body table td {
     display: table-cell;
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--border-color);
+    text-align: left;
+    color: var(--text-primary);
+}
+
+.gd-section .nd-body table th {
+    background-color: var(--bg-tertiary);
+    font-weight: 600;
+}
+
+/* === DARK MODE: Override tất cả inline styles từ Quill editor lưu trong DB ===
+   Dùng selector * để bắt toàn bộ elements có inline style bên trong nd-body,
+   bao gồm span, p, td, th, em, strong, v.v. */
+[data-theme="dark"] .gd-section .nd-body * {
+    color: inherit !important;
+    background-color: transparent !important;
+    background: transparent !important;
+}
+
+/* Giữ màu chữ chính cho toàn bộ nd-body */
+[data-theme="dark"] .gd-section .nd-body {
+    color: var(--text-primary) !important;
+}
+
+/* Khôi phục màu link trong dark mode */
+[data-theme="dark"] .gd-section .nd-body a,
+[data-theme="dark"] .gd-section .nd-body a * {
+    color: var(--accent-color) !important;
+}
+
+/* === DARK MODE: Fix table === */
+[data-theme="dark"] .gd-section .nd-body table {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .gd-section .nd-body th,
+[data-theme="dark"] .gd-section .nd-body td {
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+    background-color: transparent !important;
+}
+
+[data-theme="dark"] .gd-section .nd-body th {
+    background-color: var(--bg-tertiary) !important;
 }
 
 /* Ảnh không tràn */
