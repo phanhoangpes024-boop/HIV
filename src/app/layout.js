@@ -3,6 +3,7 @@ import "./globals.css";
 import Navbar from "../components/Navbar/Navbar";
 import ProgressBar from "../components/ProgressBar";
 import { Suspense } from "react";
+import Script from "next/script";
 
 const playfair = Playfair_Display({
   subsets: ["latin", "vietnamese"],
@@ -106,6 +107,19 @@ export default function RootLayout({ children }) {
   return (
     <html lang="vi" className={`${playfair.variable} ${notoSerif.variable}`} suppressHydrationWarning>
       <head>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-2638EG8JJE"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-2638EG8JJE');
+          `}
+        </Script>
         <script
           dangerouslySetInnerHTML={{
             __html: `
