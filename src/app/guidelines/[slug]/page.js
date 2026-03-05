@@ -161,26 +161,7 @@ export default async function DiseasePage({ params }) {
                 {disease.description && <p className="gd-desc">{disease.description}</p>}
             </header>
 
-            {/* Table of Contents */}
-            {guidelines.length > 0 && (
-                <nav className="gd-toc">
-                    <h2 className="gd-toc-title">Mục lục</h2>
-                    <ol className="gd-toc-list">
-                        {guidelines.map((g, idx) => {
-                            const sec = sectionLabels[g.section_type] || sectionLabels.overview;
-                            return (
-                                <li key={g.id}>
-                                    <a href={`#section-${g.id}`} className="gd-toc-link">
-                                        <span className="gd-toc-num">{idx + 1}</span>
-                                        <span>{g.title}</span>
-                                        {g.source_name && <span className="gd-toc-source">{g.source_name}</span>}
-                                    </a>
-                                </li>
-                            );
-                        })}
-                    </ol>
-                </nav>
-            )}
+            {/* Table of Contents — đã bỏ để giao diện gọn hơn */}
 
             {/* FIX: Sections giờ lazy-render qua client component */}
             <GuidelineSections sections={guidelines} />

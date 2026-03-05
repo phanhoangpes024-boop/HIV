@@ -566,6 +566,256 @@
     padding-top: 2rem;
 }
 
+/* =============================================
+   ACCORDION STYLES
+   ============================================= */
+
+.gd-accordion-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0;
+}
+
+.gd-accordion-toggle-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.gd-accordion-toggle-all:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+    background: var(--bg-tertiary);
+}
+
+.gd-accordion-info {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* --- Accordion Item --- */
+.gd-accordion-item {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    scroll-margin-top: 1rem;
+}
+
+.gd-accordion-item:hover {
+    border-color: var(--text-secondary);
+}
+
+.gd-accordion-item.open {
+    border-color: var(--border-color);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+}
+
+/* --- Accordion Trigger (header) --- */
+.gd-accordion-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: none;
+    background: var(--bg-secondary);
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.15s;
+}
+
+.gd-accordion-trigger:hover {
+    background: var(--bg-tertiary);
+}
+
+.gd-accordion-item.open .gd-accordion-trigger {
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+}
+
+.gd-accordion-left {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.gd-accordion-num {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    min-width: 20px;
+    text-align: center;
+}
+
+.gd-accordion-trigger .gd-section-badge {
+    margin-bottom: 0;
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+}
+
+.gd-badge-icon {
+    font-size: 0.8rem;
+}
+
+.gd-accordion-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gd-accordion-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.gd-accordion-source {
+    font-size: 0.7rem;
+    color: #10b981;
+    font-weight: 500;
+    background: rgba(16, 185, 129, 0.08);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+}
+
+.gd-accordion-chevron {
+    color: var(--text-secondary);
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+}
+
+.gd-accordion-chevron.rotated {
+    transform: rotate(180deg);
+}
+
+/* --- Accordion Content --- */
+.gd-accordion-content {
+    overflow: hidden;
+}
+
+.gd-accordion-content[hidden] {
+    display: none;
+}
+
+.gd-accordion-body {
+    padding: 1.25rem 1rem 1.5rem;
+}
+
+/* Override nd-body khi nằm trong accordion */
+.gd-accordion-body .nd-body {
+    max-width: 100%;
+    width: 100%;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: normal;
+    overflow-x: hidden;
+}
+
+.gd-accordion-body .nd-body p,
+.gd-accordion-body .nd-body li,
+.gd-accordion-body .nd-body td,
+.gd-accordion-body .nd-body th,
+.gd-accordion-body .nd-body blockquote,
+.gd-accordion-body .nd-body div {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: normal;
+}
+
+.gd-accordion-body .nd-body table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+}
+
+.gd-accordion-body .nd-body table thead,
+.gd-accordion-body .nd-body table tbody {
+    display: table;
+    width: 100%;
+}
+
+.gd-accordion-body .nd-body table tr {
+    display: table-row;
+}
+
+.gd-accordion-body .nd-body table th,
+.gd-accordion-body .nd-body table td {
+    display: table-cell;
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--border-color);
+    text-align: left;
+    color: var(--text-primary);
+}
+
+.gd-accordion-body .nd-body table th {
+    background-color: var(--bg-tertiary);
+    font-weight: 600;
+}
+
+.gd-accordion-body .nd-body img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Dark mode cho accordion */
+[data-theme="dark"] .gd-accordion-body .nd-body * {
+    color: inherit !important;
+    background-color: transparent !important;
+    background: transparent !important;
+}
+
+[data-theme="dark"] .gd-accordion-body .nd-body {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .gd-accordion-body .nd-body a,
+[data-theme="dark"] .gd-accordion-body .nd-body a * {
+    color: var(--accent-color) !important;
+}
+
+[data-theme="dark"] .gd-accordion-body .nd-body table {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .gd-accordion-body .nd-body th,
+[data-theme="dark"] .gd-accordion-body .nd-body td {
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+    background-color: transparent !important;
+}
+
+[data-theme="dark"] .gd-accordion-body .nd-body th {
+    background-color: var(--bg-tertiary) !important;
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 768px) {
     .gl-container {
@@ -594,5 +844,34 @@
 
     .gd-related-list {
         grid-template-columns: 1fr;
+    }
+
+    /* Accordion mobile */
+    .gd-accordion-trigger {
+        padding: 0.75rem 0.75rem;
+        gap: 0.5rem;
+    }
+
+    .gd-accordion-left {
+        gap: 0.4rem;
+        flex-wrap: wrap;
+    }
+
+    .gd-accordion-title {
+        font-size: 0.85rem;
+        white-space: normal;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .gd-accordion-source {
+        display: none;
+    }
+
+    .gd-accordion-body {
+        padding: 1rem 0.75rem;
     }
 }

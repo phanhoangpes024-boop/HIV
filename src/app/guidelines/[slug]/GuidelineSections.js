@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { createSlugWithId } from '../../../lib/slugify';
 
@@ -12,69 +12,12 @@ function cleanHtml(html) {
         .replace(/\u00A0/g, ' ');
 }
 
-// ── LazySection: chỉ render khi sắp vào viewport ─────────────────────────
-function LazySection({ children }) {
-    const ref = useRef(null);
-    const [visible, setVisible] = useState(false);
-
-    useEffect(() => {
-        const el = ref.current;
-        if (!el) return;
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setVisible(true);
-                    observer.disconnect();
-                }
-            },
-            { rootMargin: '400px' } // bắt đầu render trước 400px
-        );
-        observer.observe(el);
-        return () => observer.disconnect();
-    }, []);
-
-    return (
-        <div ref={ref}>
-            {visible
-                ? children
-                // Placeholder giữ chiều cao để scroll không bị nhảy layout
-                : <div style={{ minHeight: 400 }} aria-hidden="true" />
-            }
-        </div>
-    );
-}
-
 // ── SectionContent: nội dung 1 section ────────────────────────────────────
-function SectionContent({ g, idx, sec }) {
+function SectionContent({ g }) {
     const linkedArticles = g.guideline_articles?.map(ga => ga.articles).filter(Boolean) || [];
 
     return (
-        <section id={`section-${g.id}`} className="gd-section">
-            <div className="gd-section-header">
-                <div
-                    className="gd-section-badge"
-                    style={{
-                        backgroundColor: sec.color + '12',
-                        color: sec.color,
-                        borderColor: sec.color + '30',
-                    }}
-                >
-                    {sec.label}
-                </div>
-                <h2 className="gd-section-title">
-                    <span className="gd-section-num">{idx + 1}.</span>
-                    {g.title}
-                </h2>
-                {g.source_name && (
-                    <div className="gd-section-source">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Nguồn: {g.source_name}
-                    </div>
-                )}
-            </div>
-
+        <div className="gd-accordion-body">
             {g.content && (
                 <div
                     className="nd-body"
@@ -100,7 +43,7 @@ function SectionContent({ g, idx, sec }) {
                 <div className="gd-linked">
                     <h4 className="gd-linked-title">
                         Bài viết liên quan trên{' '}
-                        <span className="brand-font" style={{ fontSize: '0.9em' }}>THE EPIDEMIC HOUSE</span>
+                        <span className="brand-font" style={{ fontSize: '0.9em' }}>EpiHouse</span>
                     </h4>
                     {linkedArticles.map(a => (
                         <Link
@@ -116,36 +59,114 @@ function SectionContent({ g, idx, sec }) {
                     ))}
                 </div>
             )}
+        </div>
+    );
+}
+
+// ── AccordionSection ───────────────────────────────────────────────────────
+function AccordionSection({ g, idx, isOpen, onToggle }) {
+    return (
+        <section id={`section-${g.id}`} className={`gd-accordion-item ${isOpen ? 'open' : ''}`}>
+            <button
+                className="gd-accordion-trigger"
+                onClick={onToggle}
+                aria-expanded={isOpen}
+                aria-controls={`content-${g.id}`}
+            >
+                <div className="gd-accordion-left">
+                    <span className="gd-accordion-num">{idx + 1}</span>
+                    <h2 className="gd-accordion-title">{g.title}</h2>
+                </div>
+                <div className="gd-accordion-right">
+                    {g.source_name && (
+                        <span className="gd-accordion-source">{g.source_name}</span>
+                    )}
+                    <svg
+                        className={`gd-accordion-chevron ${isOpen ? 'rotated' : ''}`}
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </button>
+
+            <div
+                id={`content-${g.id}`}
+                className="gd-accordion-content"
+                role="region"
+                hidden={!isOpen}
+            >
+                {isOpen && <SectionContent g={g} />}
+            </div>
         </section>
     );
 }
 
-// ── GuidelineSections: orchestrate lazy rendering ─────────────────────────
-const sectionLabels = {
-    overview: { label: 'Tổng quan', color: '#3b82f6' },
-    diagnosis: { label: 'Chẩn đoán', color: '#8b5cf6' },
-    treatment: { label: 'Điều trị', color: '#10b981' },
-    prevention: { label: 'Dự phòng', color: '#f59e0b' },
-    research: { label: 'Nghiên cứu mới', color: '#ef4444' },
-};
-
+// ── GuidelineSections: accordion controller ─────────────────────────────────
 export default function GuidelineSections({ sections }) {
+    const [openIds, setOpenIds] = useState(() => {
+        if (sections.length > 0) return new Set([sections[0].id]);
+        return new Set();
+    });
+
+    const toggleSection = useCallback((id) => {
+        setOpenIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    }, []);
+
+    const expandAll = useCallback(() => {
+        setOpenIds(new Set(sections.map(s => s.id)));
+    }, [sections]);
+
+    const collapseAll = useCallback(() => {
+        setOpenIds(new Set());
+    }, []);
+
+    const allOpen = openIds.size === sections.length;
+
     return (
         <div className="gd-sections">
-            {sections.map((g, idx) => {
-                const sec = sectionLabels[g.section_type] || sectionLabels.overview;
-                const content = <SectionContent key={g.id} g={g} idx={idx} sec={sec} />;
+            {sections.length > 1 && (
+                <div className="gd-accordion-controls">
+                    <button
+                        className="gd-accordion-toggle-all"
+                        onClick={allOpen ? collapseAll : expandAll}
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            {allOpen
+                                ? <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                                : <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                            }
+                        </svg>
+                        {allOpen ? 'Thu gọn tất cả' : 'Mở rộng tất cả'}
+                    </button>
+                    <span className="gd-accordion-info">
+                        {sections.length} phần · {openIds.size} đang mở
+                    </span>
+                </div>
+            )}
 
-                // 2 sections đầu: render ngay (above the fold)
-                if (idx < 2) return content;
-
-                // Phần còn lại: lazy render khi scroll tới
-                return (
-                    <LazySection key={g.id}>
-                        {content}
-                    </LazySection>
-                );
-            })}
+            {sections.map((g, idx) => (
+                <AccordionSection
+                    key={g.id}
+                    g={g}
+                    idx={idx}
+                    isOpen={openIds.has(g.id)}
+                    onToggle={() => toggleSection(g.id)}
+                />
+            ))}
         </div>
     );
 }
