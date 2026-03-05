@@ -1,33 +1,38 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { createSlugWithId } from '../../../lib/slugify';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function cleanHtml(html) {
     if (!html) return '';
-    return html
-        .replace(/&nbsp;/g, ' ')
-        .replace(/\u00A0/g, ' ');
+    return html.replace(/&nbsp;/g, ' ').replace(/\u00A0/g, ' ');
 }
 
-// ── SectionContent: nội dung 1 section ────────────────────────────────────
-function SectionContent({ g }) {
-    const linkedArticles = g.guideline_articles?.map(ga => ga.articles).filter(Boolean) || [];
+// ── Fetch nội dung 1 section từ API ────────────────────────────────────────
+async function fetchSectionContent(guidelineId) {
+    const res = await fetch(`/api/guidelines?id=${guidelineId}`);
+    if (!res.ok) return null;
+    return res.json();
+}
+
+// ── SectionContent: hiển thị nội dung đã fetch ────────────────────────────
+function SectionContent({ data }) {
+    const linkedArticles = data.guideline_articles?.map(ga => ga.articles).filter(Boolean) || [];
 
     return (
         <div className="gd-accordion-body">
-            {g.content && (
+            {data.content && (
                 <div
                     className="nd-body"
-                    dangerouslySetInnerHTML={{ __html: cleanHtml(g.content) }}
+                    dangerouslySetInnerHTML={{ __html: cleanHtml(data.content) }}
                 />
             )}
 
-            {g.external_url && (
+            {data.external_url && (
                 <a
-                    href={g.external_url}
+                    href={data.external_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="gd-external-link"
@@ -63,8 +68,21 @@ function SectionContent({ g }) {
     );
 }
 
+// ── Loading skeleton ───────────────────────────────────────────────────────
+function SectionLoading() {
+    return (
+        <div className="gd-accordion-body gd-loading">
+            <div className="gd-skeleton-line" style={{ width: '90%' }} />
+            <div className="gd-skeleton-line" style={{ width: '75%' }} />
+            <div className="gd-skeleton-line" style={{ width: '85%' }} />
+            <div className="gd-skeleton-line" style={{ width: '60%' }} />
+            <div className="gd-skeleton-line" style={{ width: '80%' }} />
+        </div>
+    );
+}
+
 // ── AccordionSection ───────────────────────────────────────────────────────
-function AccordionSection({ g, idx, isOpen, onToggle }) {
+function AccordionSection({ g, idx, isOpen, onToggle, contentData, isLoading }) {
     return (
         <section id={`section-${g.id}`} className={`gd-accordion-item ${isOpen ? 'open' : ''}`}>
             <button
@@ -101,20 +119,65 @@ function AccordionSection({ g, idx, isOpen, onToggle }) {
                 role="region"
                 hidden={!isOpen}
             >
-                {isOpen && <SectionContent g={g} />}
+                {isOpen && (
+                    isLoading
+                        ? <SectionLoading />
+                        : contentData
+                            ? <SectionContent data={contentData} />
+                            : <SectionLoading />
+                )}
             </div>
         </section>
     );
 }
 
-// ── GuidelineSections: accordion controller ─────────────────────────────────
+// ── GuidelineSections: controller ───────────────────────────────────────────
 export default function GuidelineSections({ sections }) {
-    const [openIds, setOpenIds] = useState(() => {
-        if (sections.length > 0) return new Set([sections[0].id]);
-        return new Set();
-    });
+    // Tất cả đóng ban đầu — không load gì cả
+    const [openIds, setOpenIds] = useState(new Set());
+    // Cache nội dung đã fetch: { [guidelineId]: data }
+    const [contentCache, setContentCache] = useState({});
+    // Đang loading: { [guidelineId]: true }
+    const [loadingIds, setLoadingIds] = useState({});
+    // Đã preload chưa
+    const preloadStarted = useRef(false);
 
-    const toggleSection = useCallback((id) => {
+    // Fetch 1 section (nếu chưa có trong cache)
+    const loadSection = useCallback(async (id) => {
+        if (contentCache[id]) return;
+
+        setLoadingIds(prev => ({ ...prev, [id]: true }));
+        try {
+            const data = await fetchSectionContent(id);
+            if (data) {
+                setContentCache(prev => ({ ...prev, [id]: data }));
+            }
+        } finally {
+            setLoadingIds(prev => {
+                const next = { ...prev };
+                delete next[id];
+                return next;
+            });
+        }
+    }, [contentCache]);
+
+    // Preload tất cả sections còn lại (âm thầm, tuần tự)
+    const preloadRemaining = useCallback(async (excludeId) => {
+        if (preloadStarted.current) return;
+        preloadStarted.current = true;
+
+        for (const s of sections) {
+            if (s.id === excludeId) continue;
+            // Chờ 300ms giữa mỗi fetch để không quá tải
+            await new Promise(r => setTimeout(r, 300));
+            const data = await fetchSectionContent(s.id);
+            if (data) {
+                setContentCache(prev => ({ ...prev, [s.id]: data }));
+            }
+        }
+    }, [sections]);
+
+    const toggleSection = useCallback(async (id) => {
         setOpenIds(prev => {
             const next = new Set(prev);
             if (next.has(id)) {
@@ -124,11 +187,24 @@ export default function GuidelineSections({ sections }) {
             }
             return next;
         });
-    }, []);
 
-    const expandAll = useCallback(() => {
+        // Fetch nội dung nếu chưa có
+        if (!contentCache[id]) {
+            await loadSection(id);
+        }
+
+        // Sau khi mở section đầu tiên → preload phần còn lại âm thầm
+        preloadRemaining(id);
+    }, [contentCache, loadSection, preloadRemaining]);
+
+    const expandAll = useCallback(async () => {
         setOpenIds(new Set(sections.map(s => s.id)));
-    }, [sections]);
+        for (const s of sections) {
+            if (!contentCache[s.id]) {
+                loadSection(s.id);
+            }
+        }
+    }, [sections, contentCache, loadSection]);
 
     const collapseAll = useCallback(() => {
         setOpenIds(new Set());
@@ -165,6 +241,8 @@ export default function GuidelineSections({ sections }) {
                     idx={idx}
                     isOpen={openIds.has(g.id)}
                     onToggle={() => toggleSection(g.id)}
+                    contentData={contentCache[g.id]}
+                    isLoading={!!loadingIds[g.id]}
                 />
             ))}
         </div>

@@ -40,16 +40,11 @@ async function getDisease(id) {
     return data;
 }
 
-async function getGuidelines(diseaseId) {
+// Chỉ lấy metadata (không lấy content nặng) → trang load nhanh
+async function getGuidelinesMetadata(diseaseId) {
     const { data } = await supabase
         .from('guidelines')
-        .select(`
-            *,
-            guideline_articles (
-                article_id,
-                articles ( id, title, description, date, institution )
-            )
-        `)
+        .select('id, title, section_type, source_name, external_url, sort_order')
         .eq('disease_id', diseaseId)
         .order('sort_order');
     return data || [];
@@ -118,10 +113,10 @@ export default async function DiseasePage({ params }) {
     const { slug } = await params;
     const id = getIdFromSlug(slug);
 
-    // FIX: chạy song song thay vì tuần tự
+    // Chạy song song: lấy disease + metadata sections (không có content)
     const [disease, guidelines] = await Promise.all([
         getDisease(id),
-        getGuidelines(id),
+        getGuidelinesMetadata(id),
     ]);
 
     if (!disease) notFound();
