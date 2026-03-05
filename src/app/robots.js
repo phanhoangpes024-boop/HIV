@@ -7,6 +7,6 @@ export default function robots() {
                 disallow: ["/admin", "/profile", "/signin", "/api"],
             },
         ],
-        sitemap: "https://theepidemichouse.com/sitemap.xml",
+        sitemap: "https://epihouse.org/sitemap.xml",
     };
 }

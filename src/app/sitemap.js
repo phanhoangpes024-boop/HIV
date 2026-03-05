@@ -7,7 +7,7 @@ const supabase = createClient(
 );
 
 export default async function sitemap() {
-    const baseUrl = "https://theepidemichouse.com";
+    const baseUrl = "https://epihouse.org";
 
     // Fetch articles
     const { data: articles } = await supabase.from('articles').select('id, title, date');
@@ -35,9 +35,9 @@ export default async function sitemap() {
             priority: 1,
         },
         {
-            url: `${baseUrl}/forum`,
+            url: `${baseUrl}/guidelines`,
             lastModified: new Date(),
-            changeFrequency: 'hourly',
+            changeFrequency: 'weekly',
             priority: 0.9,
         },
         ...articleEntries,

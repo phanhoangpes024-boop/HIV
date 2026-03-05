@@ -18,14 +18,14 @@ const notoSerif = Noto_Serif({
 
 export const metadata = {
   title: {
-    default: "THE EPIDEMIC HOUSE",
-    template: "%s | THE EPIDEMIC HOUSE",
+    default: "EpiHouse – Cơ Sở Dữ Liệu Bệnh Truyền Nhiễm Việt Nam",
+    template: "%s | EpiHouse",
   },
-  description: "Cơ sở dữ liệu tin tức bệnh truyền nhiễm, hướng dẫn lâm sàng và diễn đàn y khoa chuyên nghiệp.",
-  keywords: ["bệnh truyền nhiễm", "HIV", "vaccine", "y tế", "tin tức y khoa", "hướng dẫn lâm sàng"],
-  authors: [{ name: "THE EPIDEMIC HOUSE Team" }],
-  creator: "THE EPIDEMIC HOUSE",
-  publisher: "THE EPIDEMIC HOUSE",
+  description: "EpiHouse – Cơ sở dữ liệu tin tức bệnh truyền nhiễm, hướng dẫn lâm sàng và nghiên cứu y khoa mới nhất tại Việt Nam.",
+  keywords: ["bệnh truyền nhiễm", "HIV", "vaccine", "y tế", "tin tức y khoa", "hướng dẫn lâm sàng", "dịch bệnh", "EpiHouse"],
+  authors: [{ name: "EpiHouse" }],
+  creator: "EpiHouse",
+  publisher: "EpiHouse",
   formatDetection: {
     email: false,
     address: false,
@@ -38,10 +38,10 @@ export const metadata = {
     },
   },
   openGraph: {
-    title: "THE EPIDEMIC HOUSE",
-    description: "Cơ sở dữ liệu tin tức bệnh truyền nhiễm hàng đầu.",
+    title: "EpiHouse – Cơ Sở Dữ Liệu Bệnh Truyền Nhiễm Việt Nam",
+    description: "EpiHouse – Cơ sở dữ liệu tin tức bệnh truyền nhiễm, hướng dẫn lâm sàng và nghiên cứu y khoa mới nhất tại Việt Nam.",
     url: "https://epihouse.org",
-    siteName: "THE EPIDEMIC HOUSE",
+    siteName: "EpiHouse",
     locale: "vi_VN",
     type: "website",
     images: [
@@ -49,14 +49,14 @@ export const metadata = {
         url: "https://epihouse.org/og-default.png",
         width: 1200,
         height: 630,
-        alt: "THE EPIDEMIC HOUSE",
+        alt: "EpiHouse – Cơ Sở Dữ Liệu Bệnh Truyền Nhiễm Việt Nam",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "THE EPIDEMIC HOUSE",
-    description: "Cơ sở dữ liệu tin tức bệnh truyền nhiễm hàng đầu.",
+    title: "EpiHouse – Cơ Sở Dữ Liệu Bệnh Truyền Nhiễm Việt Nam",
+    description: "EpiHouse – Cơ sở dữ liệu tin tức bệnh truyền nhiễm, hướng dẫn lâm sàng và nghiên cứu y khoa mới nhất tại Việt Nam.",
     images: ["https://epihouse.org/og-default.png"],
   },
   robots: {
@@ -69,6 +69,36 @@ export const metadata = {
       "max-image-preview": "large",
       "max-snippet": -1,
     },
+  },
+};
+
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'EpiHouse',
+  alternateName: 'THE EPIDEMIC HOUSE',
+  url: 'https://epihouse.org',
+  logo: {
+    '@type': 'ImageObject',
+    url: 'https://epihouse.org/Logo.png',
+  },
+  description: 'Cơ sở dữ liệu tin tức bệnh truyền nhiễm, hướng dẫn lâm sàng và nghiên cứu y khoa mới nhất tại Việt Nam.',
+  sameAs: [],
+};
+
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'EpiHouse',
+  url: 'https://epihouse.org',
+  description: 'Cơ sở dữ liệu tin tức bệnh truyền nhiễm và hướng dẫn lâm sàng Việt Nam.',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: 'https://epihouse.org/?q={search_term_string}',
+    },
+    'query-input': 'required name=search_term_string',
   },
 };
 
@@ -87,6 +117,14 @@ export default function RootLayout({ children }) {
               })();
             `,
           }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
         />
       </head>
       <body>

@@ -305,8 +305,8 @@ export default function NewsList() {
             <div className="nl-hero">
                 <Image src="/Logo.png" alt="THE EPIDEMIC HOUSE Logo" width={120} height={120} className="nl-hero-logo logo-light" />
                 <Image src="/Dark Logo.png" alt="THE EPIDEMIC HOUSE Logo" width={120} height={120} className="nl-hero-logo logo-dark" />
-                <h1 className="nl-hero-title brand-font">THE EPIDEMIC HOUSE</h1>
-                <p className="nl-hero-subtitle">Dự án cung cấp thông tin y tế mới nhất về bệnh truyền nhiễm</p>
+                <h1 className="nl-hero-title brand-font">Cơ Sở Dữ Liệu Bệnh Truyền Nhiễm</h1>
+                <p className="nl-hero-subtitle">Tin tức, hướng dẫn lâm sàng và nghiên cứu y khoa về bệnh truyền nhiễm mới nhất tại Việt Nam</p>
                 <div className="nl-search-bar">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="nl-search-icon">
                         <circle cx="11" cy="11" r="8" /><path strokeLinecap="round" d="M21 21l-4.35-4.35" />
