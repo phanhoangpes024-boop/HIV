@@ -96,17 +96,17 @@ export default async function NewsDetailPage({ params }) {
         description: news.description,
         image: news.image ? [news.image] : [],
         datePublished: news.dateISO,
-        dateModified: news.dateISO, // Giả sử cùng ngày nếu không có cập nhật
-        author: news.authors.map(name => ({
+        dateModified: news.dateISO,
+        author: news.authors.length > 0 ? news.authors.map(name => ({
             '@type': 'Person',
             name: name,
-        })),
+        })) : { '@type': 'Organization', name: news.institution || 'EpiHouse' },
         publisher: {
             '@type': 'Organization',
-            name: 'THE EPIDEMIC HOUSE',
+            name: 'EpiHouse',
             logo: {
                 '@type': 'ImageObject',
-                url: 'https://epihouse.org/logo.png',
+                url: 'https://epihouse.org/Logo.png',
             },
         },
         healthCondition: {

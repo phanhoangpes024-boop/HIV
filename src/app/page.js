@@ -1,4 +1,4 @@
-import NewsList from "../components/NewsList/NewsList";
+import NewsListServer from "../components/NewsList/NewsListServer";
 
 export const metadata = {
   title: "EpiHouse – Cơ Sở Dữ Liệu Bệnh Truyền Nhiễm Việt Nam",
@@ -17,7 +17,7 @@ export const metadata = {
 export default function Home() {
   return (
     <>
-      <NewsList />
+      <NewsListServer />
     </>
   );
 }

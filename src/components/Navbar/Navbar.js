@@ -159,7 +159,7 @@ export default function Navbar() {
 
     const renderAvatar = (size) => {
         if (avatarUrl) {
-            return <img src={avatarUrl} alt="" className="sidebar-avatar-img" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover' }} />;
+            return <img src={avatarUrl} alt="Ảnh đại diện người dùng" className="sidebar-avatar-img" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover' }} />;
         }
         return <div className="sidebar-avatar" style={{ width: size, height: size, fontSize: size * 0.4 }}>{initial}</div>;
     };
@@ -172,7 +172,7 @@ export default function Navbar() {
                 <div className="sidebar-header">
                     <div className="sidebar-header-row">
                         <Link href="/" className="sidebar-brand">
-                            <span className="sidebar-brand-text brand-font">THE EPIDEMIC HOUSE</span>
+                            <span className="sidebar-brand-text brand-font">EpiHouse.org</span>
                         </Link>
                         <button
                             className="sidebar-toggle"

@@ -133,7 +133,14 @@ export default async function DiseasePage({ params }) {
         specialty: 'InfectiousDisease',
         audience: { '@type': 'MedicalAudience', medicalAudienceType: 'Clinician' },
         mainEntity: { '@type': 'MedicalCondition', name: disease.name_vi, alternateName: disease.name },
-        publisher: { '@type': 'Organization', name: 'THE EPIDEMIC HOUSE' },
+        publisher: {
+            '@type': 'Organization',
+            name: 'EpiHouse',
+            logo: {
+                '@type': 'ImageObject',
+                url: 'https://epihouse.org/Logo.png',
+            }
+        },
     };
 
     return (

@@ -21,8 +21,23 @@ const ChevronRight = () => (
 export default function Breadcrumb({ items }) {
     if (!items || items.length === 0) return null;
 
+    const breadcrumbJsonLd = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": items.map((item, index) => ({
+            "@type": "ListItem",
+            "position": index + 1,
+            "name": item.label,
+            "item": item.current ? undefined : (item.href.startsWith('http') ? item.href : `https://epihouse.org${item.href}`)
+        }))
+    };
+
     return (
         <nav className="breadcrumb-nav">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+            />
             {items.map((item, index) => (
                 <div key={index} className="breadcrumb-item-wrapper">
                     {item.current ? (
