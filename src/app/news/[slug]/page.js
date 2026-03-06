@@ -7,6 +7,8 @@ import Breadcrumb from '../../../components/Breadcrumb/Breadcrumb';
 import { getIdFromSlug, createSlugWithId } from '../../../lib/slugify';
 import './NewsDetail.css';
 
+export const dynamic = 'force-dynamic';
+
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
