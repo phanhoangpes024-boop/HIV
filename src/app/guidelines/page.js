@@ -36,6 +36,8 @@ async function getDiseases() {
     }));
 }
 
+export const revalidate = 0;
+
 export const metadata = {
     title: 'Hướng dẫn lâm sàng — THE EPIDEMIC HOUSE',
     description: 'Hướng dẫn chẩn đoán và điều trị các bệnh truyền nhiễm',
