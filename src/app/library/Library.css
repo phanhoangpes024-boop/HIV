@@ -1,0 +1,658 @@
+/* =============================================
+   LIBRARY — Symptom Image Library
+   ============================================= */
+
+.lib-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+}
+
+/* ---- Hero ---- */
+.lib-hero {
+    text-align: center;
+    padding: 2rem 0 1.5rem;
+}
+
+.lib-hero-title {
+    font-family: var(--font-brand), serif;
+    text-transform: uppercase;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.lib-hero-desc {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    max-width: 560px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* ---- Disclaimer Banner ---- */
+.lib-disclaimer {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    padding: 0.875rem 1rem;
+    background-color: rgba(245, 158, 11, 0.06);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 0.825rem;
+    color: #d97706;
+    line-height: 1.5;
+}
+
+.lib-disclaimer svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+[data-theme="dark"] .lib-disclaimer {
+    background-color: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.25);
+    color: #fbbf24;
+}
+
+/* ---- Tabs ---- */
+.lib-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.lib-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.lib-tab:hover {
+    border-color: var(--accent-color);
+    color: var(--text-primary);
+}
+
+.lib-tab.active {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: #ffffff;
+}
+
+/* ---- Accordion Controls ---- */
+.lib-accordion-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    padding: 0.25rem 0;
+}
+
+.lib-accordion-toggle-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.lib-accordion-toggle-all:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+    background: var(--bg-tertiary);
+}
+
+.lib-accordion-info {
+    font-size: 0.775rem;
+    color: var(--text-secondary);
+}
+
+/* ---- Accordion List ---- */
+.lib-accordion-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.lib-accordion-item {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.lib-accordion-item:hover {
+    border-color: var(--text-secondary);
+}
+
+.lib-accordion-item.open {
+    border-color: var(--border-color);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+}
+
+/* ---- Accordion Trigger ---- */
+.lib-accordion-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: none;
+    background: var(--bg-secondary);
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.15s;
+}
+
+.lib-accordion-trigger:hover {
+    background: var(--bg-tertiary);
+}
+
+.lib-accordion-item.open .lib-accordion-trigger {
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+}
+
+.lib-accordion-left {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.lib-accordion-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.lib-accordion-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.lib-accordion-count {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.lib-accordion-chevron {
+    color: var(--text-secondary);
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+}
+
+.lib-accordion-chevron.rotated {
+    transform: rotate(180deg);
+}
+
+/* ---- Accordion Body ---- */
+.lib-accordion-body {
+    padding: 1rem;
+    background: var(--bg-primary);
+}
+
+/* ---- Image Grid ---- */
+.lib-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+@media (min-width: 640px) {
+    .lib-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .lib-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* ---- Image Card ---- */
+.lib-card {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.lib-card:hover {
+    border-color: var(--accent-color);
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.08);
+    transform: translateY(-2px);
+}
+
+.lib-card-img-wrap {
+    position: relative;
+    width: 100%;
+    padding-top: 100%;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+    transition: background-color 0.3s ease;
+}
+
+.lib-card-img-wrap img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.lib-card:hover .lib-card-img-wrap img {
+    transform: scale(1.05);
+}
+
+/* ---- Sensitive Image Blur ---- */
+.lib-card-img-wrap.sensitive img {
+    filter: blur(15px);
+    transform: scale(1.1);
+}
+
+.lib-card:hover .lib-card-img-wrap.sensitive img {
+    filter: blur(15px);
+    transform: scale(1.15);
+}
+
+.lib-sensitive-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    z-index: 2;
+    color: var(--text-primary);
+    pointer-events: none;
+}
+
+.lib-sensitive-overlay svg {
+    opacity: 0.7;
+}
+
+.lib-sensitive-overlay span {
+    font-size: 0.7rem;
+    font-weight: 600;
+    opacity: 0.7;
+    letter-spacing: 0.02em;
+}
+
+.lib-card-body {
+    padding: 0.75rem;
+}
+
+.lib-card-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ---- Lightbox ---- */
+.lib-lightbox-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    animation: lib-fadeIn 0.2s ease;
+}
+
+@keyframes lib-fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.lib-lightbox {
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    max-width: 720px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: lib-slideUp 0.25s ease;
+}
+
+@keyframes lib-slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.lib-lightbox-img-wrap {
+    position: relative;
+    width: 100%;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px 16px 0 0;
+    overflow: hidden;
+    max-height: 60vh;
+}
+
+.lib-lightbox-img-wrap img {
+    max-width: 100%;
+    max-height: 60vh;
+    object-fit: contain;
+}
+
+.lib-lightbox-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    font-size: 1.25rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    z-index: 1;
+}
+
+.lib-lightbox-close:hover {
+    background: rgba(0, 0, 0, 0.85);
+}
+
+.lib-lightbox-info {
+    padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.lib-lightbox-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.lib-lightbox-desc {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.lib-lightbox-source {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--accent-color);
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.15s;
+}
+
+.lib-lightbox-source:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent-color);
+}
+
+/* ---- Clinical Confirmation Modal ---- */
+.lib-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    animation: lib-fadeIn 0.2s ease;
+}
+
+.lib-modal {
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    max-width: 460px;
+    width: 100%;
+    padding: 2rem;
+    text-align: center;
+    animation: lib-slideUp 0.25s ease;
+}
+
+.lib-modal-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--accent-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+}
+
+.lib-modal-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+}
+
+.lib-modal-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.lib-modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+.lib-modal-btn {
+    padding: 0.6rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid var(--border-color);
+}
+
+.lib-modal-btn.primary {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: #fff;
+}
+
+.lib-modal-btn.primary:hover {
+    background: var(--accent-hover);
+}
+
+.lib-modal-btn.secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.lib-modal-btn.secondary:hover {
+    background: var(--bg-tertiary);
+}
+
+/* ---- Empty State ---- */
+.lib-empty {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-secondary);
+}
+
+.lib-empty-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    color: var(--text-secondary);
+}
+
+.lib-empty p {
+    font-size: 0.9rem;
+}
+
+/* ---- Search Bar ---- */
+.lib-search {
+    position: relative;
+    margin-bottom: 1rem;
+    max-width: 360px;
+}
+
+.lib-search input {
+    width: 100%;
+    padding: 0.55rem 0.875rem 0.55rem 2.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.lib-search input:focus {
+    border-color: var(--accent-color);
+}
+
+.lib-search input::placeholder {
+    color: var(--text-secondary);
+}
+
+.lib-search-icon {
+    position: absolute;
+    left: 0.625rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+/* ---- Loading Spinner ---- */
+.lib-loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--accent-color);
+    border-radius: 50%;
+    animation: lib-spin 0.7s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes lib-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+    .lib-container {
+        padding: 1rem 1rem 5rem;
+    }
+
+    .lib-hero-title {
+        font-size: 1.5rem;
+    }
+
+    .lib-lightbox {
+        max-width: 100%;
+        border-radius: 12px;
+    }
+
+    .lib-lightbox-img-wrap {
+        border-radius: 12px 12px 0 0;
+    }
+
+    .lib-lightbox-info {
+        padding: 1rem;
+    }
+
+    .lib-modal {
+        padding: 1.5rem;
+    }
+
+    .lib-accordion-trigger {
+        padding: 0.75rem;
+        gap: 0.5rem;
+    }
+
+    .lib-accordion-title {
+        font-size: 0.85rem;
+    }
+
+    .lib-accordion-body {
+        padding: 0.75rem;
+    }
+}
