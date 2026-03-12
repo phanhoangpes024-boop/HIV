@@ -44,20 +44,14 @@ async function getImages() {
         .from('symptom_images')
         .select('id, name, description, image_url, source_url, tags, type, created_at, disease_id, is_sensitive')
         .order('created_at', { ascending: false })
-        .limit(60);
+        .limit(200);
 
     if (error) {
         console.error('Error fetching symptom images:', error);
-        return { illustrations: [], clinicalCount: 0, clinicalSensitiveCount: 0 };
+        return [];
     }
 
-    const all = data || [];
-    const illustrations = all.filter(img => img.type === 'illustration');
-    const clinical = all.filter(img => img.type === 'clinical');
-    const clinicalCount = clinical.length;
-    const clinicalSensitiveCount = clinical.filter(img => img.is_sensitive).length;
-
-    return { illustrations, clinicalCount, clinicalSensitiveCount };
+    return data || [];
 }
 
 async function getDiseases() {
@@ -74,13 +68,12 @@ async function getDiseases() {
 }
 
 export default async function LibraryPage() {
-    const [{ illustrations, clinicalCount, clinicalSensitiveCount }, diseases] = await Promise.all([
+    const [images, diseases] = await Promise.all([
         getImages(),
         getDiseases(),
     ]);
 
-    // Generate structured data — include illustrations + non-sensitive clinical images
-    const indexableCount = illustrations.length + (clinicalCount - clinicalSensitiveCount);
+    const indexableCount = images.filter(img => !img.is_sensitive).length;
     const structuredData = {
         '@context': 'https://schema.org',
         '@type': 'CollectionPage',
@@ -105,8 +98,7 @@ export default async function LibraryPage() {
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
             />
             <LibraryClient
-                illustrations={illustrations}
-                clinicalCount={clinicalCount}
+                images={images}
                 diseases={diseases}
             />
         </>

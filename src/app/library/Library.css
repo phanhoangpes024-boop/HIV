@@ -58,39 +58,6 @@
     color: #fbbf24;
 }
 
-/* ---- Tabs ---- */
-.lib-tabs {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1.25rem;
-}
-
-.lib-tab {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.5rem 1.25rem;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background: var(--bg-secondary);
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.lib-tab:hover {
-    border-color: var(--accent-color);
-    color: var(--text-primary);
-}
-
-.lib-tab.active {
-    background: var(--accent-color);
-    border-color: var(--accent-color);
-    color: #ffffff;
-}
-
 /* ---- Accordion Controls ---- */
 .lib-accordion-controls {
     display: flex;
@@ -219,6 +186,18 @@
 .lib-accordion-body {
     padding: 1rem;
     background: var(--bg-primary);
+    animation: lib-accordionReveal 0.25s ease;
+}
+
+@keyframes lib-accordionReveal {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* ---- Image Grid ---- */
@@ -248,6 +227,18 @@
     overflow: hidden;
     cursor: pointer;
     transition: all 0.2s ease;
+    animation: lib-cardFadeIn 0.3s ease both;
+}
+
+@keyframes lib-cardFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .lib-card:hover {
@@ -262,7 +253,25 @@
     padding-top: 100%;
     overflow: hidden;
     background: var(--bg-tertiary);
-    transition: background-color 0.3s ease;
+}
+
+.lib-card-img-wrap::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: linear-gradient(90deg,
+        transparent 25%,
+        rgba(255, 255, 255, 0.06) 50%,
+        transparent 75%
+    );
+    background-size: 200% 100%;
+    animation: lib-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes lib-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }
 
 .lib-card-img-wrap img {
@@ -454,90 +463,6 @@
 .lib-lightbox-source:hover {
     background: var(--bg-tertiary);
     border-color: var(--accent-color);
-}
-
-/* ---- Clinical Confirmation Modal ---- */
-.lib-modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: 9998;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem;
-    animation: lib-fadeIn 0.2s ease;
-}
-
-.lib-modal {
-    background: var(--bg-secondary);
-    border-radius: 16px;
-    max-width: 460px;
-    width: 100%;
-    padding: 2rem;
-    text-align: center;
-    animation: lib-slideUp 0.25s ease;
-}
-
-.lib-modal-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--accent-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1rem;
-}
-
-.lib-modal-title {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 0.75rem;
-}
-
-.lib-modal-text {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    line-height: 1.6;
-    margin-bottom: 1.5rem;
-}
-
-.lib-modal-actions {
-    display: flex;
-    gap: 0.75rem;
-    justify-content: center;
-}
-
-.lib-modal-btn {
-    padding: 0.6rem 1.5rem;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-    border: 1px solid var(--border-color);
-}
-
-.lib-modal-btn.primary {
-    background: var(--accent-color);
-    border-color: var(--accent-color);
-    color: #fff;
-}
-
-.lib-modal-btn.primary:hover {
-    background: var(--accent-hover);
-}
-
-.lib-modal-btn.secondary {
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-}
-
-.lib-modal-btn.secondary:hover {
-    background: var(--bg-tertiary);
 }
 
 /* ---- Empty State ---- */

@@ -2,17 +2,10 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
 
 function getThumbnailUrl(url, width = 400) {
     if (!url) return '';
     if (url.includes('cdn.epihouse.org')) {
-        // BunnyNet Optimizer parameters: auto format, compression, and smart resizing
         return `${url}?width=${width}&height=${width}&crop_margin=10&quality=80&sharpen=true`;
     }
     return url;
@@ -28,68 +21,22 @@ function getFullUrl(url) {
 
 const UNGROUPED_KEY = '__ungrouped__';
 
-export default function LibraryClient({ illustrations = [], clinicalCount = 0, diseases = [] }) {
-    const [activeTab, setActiveTab] = useState('illustration');
+export default function LibraryClient({ images = [], diseases = [] }) {
     const [lightboxImage, setLightboxImage] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [clinicalAccepted, setClinicalAccepted] = useState(false);
-    const [showClinicalModal, setShowClinicalModal] = useState(false);
     const [openIds, setOpenIds] = useState(new Set());
-
-    // Clinical images - loaded only after confirmation
-    const [clinicalImages, setClinicalImages] = useState([]);
-    const [loadingClinical, setLoadingClinical] = useState(false);
-
-    // Check sessionStorage on mount
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const accepted = sessionStorage.getItem('clinical_accepted');
-            if (accepted === 'true') {
-                setClinicalAccepted(true);
-                fetchClinicalImages();
-            }
-        }
-    }, []);
-
-    // No blanket noindex — per-image sensitivity control handles SEO
-
-    const fetchClinicalImages = async () => {
-        try {
-            setLoadingClinical(true);
-            const { data, error } = await supabase
-                .from('symptom_images')
-                .select('id, name, description, image_url, source_url, tags, type, created_at, disease_id, is_sensitive')
-                .eq('type', 'clinical')
-                .order('created_at', { ascending: false })
-                .limit(100);
-
-            if (error) throw error;
-            setClinicalImages(data || []);
-        } catch (error) {
-            console.error('Error fetching clinical images:', error);
-        } finally {
-            setLoadingClinical(false);
-        }
-    };
-
-    // Current tab's source images
-    const tabImages = useMemo(() => {
-        return activeTab === 'illustration' ? illustrations : clinicalImages;
-    }, [activeTab, illustrations, clinicalImages]);
 
     // Group images by disease
     const groupedImages = useMemo(() => {
-        // Apply search filter
-        let filtered = tabImages;
+        let filtered = images;
         if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase();
-            filtered = tabImages.filter(img =>
+            filtered = images.filter(img =>
                 img.name?.toLowerCase().includes(q) ||
                 img.description?.toLowerCase().includes(q)
             );
         }
 
-        // Initialize groups from diseases list (preserves sort_order)
         const groups = new Map();
         diseases.forEach(d => {
             groups.set(d.id, {
@@ -98,13 +45,11 @@ export default function LibraryClient({ illustrations = [], clinicalCount = 0, d
             });
         });
 
-        // Ungrouped bucket
         groups.set(UNGROUPED_KEY, {
             disease: { id: UNGROUPED_KEY, name_vi: 'Khác', sort_order: 9999 },
             images: [],
         });
 
-        // Distribute images
         filtered.forEach(img => {
             const key = img.disease_id || UNGROUPED_KEY;
             if (groups.has(key)) {
@@ -114,11 +59,9 @@ export default function LibraryClient({ illustrations = [], clinicalCount = 0, d
             }
         });
 
-        // Filter out empty groups
         return Array.from(groups.values()).filter(g => g.images.length > 0);
-    }, [tabImages, diseases, searchQuery]);
+    }, [images, diseases, searchQuery]);
 
-    // Accordion controls
     const toggleSection = useCallback((diseaseId) => {
         setOpenIds(prev => {
             const next = new Set(prev);
@@ -148,37 +91,10 @@ export default function LibraryClient({ illustrations = [], clinicalCount = 0, d
         }
     }, [searchQuery, groupedImages]);
 
-    const handleTabClick = (tab) => {
-        if (tab === 'clinical' && !clinicalAccepted) {
-            setShowClinicalModal(true);
-            return;
-        }
-        setActiveTab(tab);
-        setSearchQuery('');
-        setOpenIds(new Set());
-    };
-
-    const handleClinicalAccept = () => {
-        setClinicalAccepted(true);
-        sessionStorage.setItem('clinical_accepted', 'true');
-        setShowClinicalModal(false);
-        setActiveTab('clinical');
-        setSearchQuery('');
-        setOpenIds(new Set());
-        fetchClinicalImages();
-    };
-
-    const handleClinicalDecline = () => {
-        setShowClinicalModal(false);
-    };
-
     // Close lightbox on Escape
     useEffect(() => {
         const handleKey = (e) => {
-            if (e.key === 'Escape') {
-                setLightboxImage(null);
-                setShowClinicalModal(false);
-            }
+            if (e.key === 'Escape') setLightboxImage(null);
         };
         window.addEventListener('keydown', handleKey);
         return () => window.removeEventListener('keydown', handleKey);
@@ -186,18 +102,11 @@ export default function LibraryClient({ illustrations = [], clinicalCount = 0, d
 
     // Lock body scroll
     useEffect(() => {
-        if (lightboxImage || showClinicalModal) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
-        }
+        document.body.style.overflow = lightboxImage ? 'hidden' : '';
         return () => { document.body.style.overflow = ''; };
-    }, [lightboxImage, showClinicalModal]);
+    }, [lightboxImage]);
 
-    const getAltText = (img) => {
-        const type = img.type === 'illustration' ? 'minh họa y khoa' : 'hình ảnh lâm sàng';
-        return `${img.name} — ${type}`;
-    };
+    const getAltText = (img) => `${img.name} — hình ảnh lâm sàng`;
 
     return (
         <div className="lib-container">
@@ -205,7 +114,7 @@ export default function LibraryClient({ illustrations = [], clinicalCount = 0, d
             <div className="lib-hero">
                 <h1 className="lib-hero-title">Thư viện triệu chứng</h1>
                 <p className="lib-hero-desc">
-                    Bộ sưu tập hình ảnh minh họa và lâm sàng các triệu chứng bệnh truyền nhiễm, phục vụ mục đích học tập và nghiên cứu.
+                    Bộ sưu tập hình ảnh lâm sàng các triệu chứng bệnh truyền nhiễm, phục vụ mục đích học tập và nghiên cứu.
                 </p>
             </div>
 
@@ -215,32 +124,8 @@ export default function LibraryClient({ illustrations = [], clinicalCount = 0, d
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
                 <p>
-                    <strong>Lưu ý:</strong> Hình ảnh trong thư viện chỉ mang tính chất tham khảo, phục vụ mục đích học tập và nghiên cứu y khoa. Không sử dụng để tự chẩn đoán hoặc thay thế tư vấn y tế chuyên nghiệp.
+                    <strong>Lưu ý:</strong> Hình ảnh trong thư viện có thể chứa nội dung nhạy cảm, chỉ mang tính chất tham khảo phục vụ mục đích học tập và nghiên cứu y khoa. Không sử dụng để tự chẩn đoán hoặc thay thế tư vấn y tế chuyên nghiệp.
                 </p>
-            </div>
-
-            {/* Tabs */}
-            <div className="lib-tabs">
-                <button
-                    className={`lib-tab ${activeTab === 'illustration' ? 'active' : ''}`}
-                    onClick={() => handleTabClick('illustration')}
-                >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="3" y="3" width="18" height="18" rx="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <circle cx="8.5" cy="8.5" r="1.5" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 15l-5-5L5 21" />
-                    </svg>
-                    Minh họa ({illustrations.length})
-                </button>
-                <button
-                    className={`lib-tab ${activeTab === 'clinical' ? 'active' : ''}`}
-                    onClick={() => handleTabClick('clinical')}
-                >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                    Lâm sàng ({clinicalAccepted ? clinicalImages.length : clinicalCount})
-                </button>
             </div>
 
             {/* Search */}
@@ -259,16 +144,8 @@ export default function LibraryClient({ illustrations = [], clinicalCount = 0, d
                 />
             </div>
 
-            {/* Loading state for clinical */}
-            {activeTab === 'clinical' && loadingClinical && (
-                <div className="lib-empty">
-                    <div className="lib-loading-spinner"></div>
-                    <p>Đang tải hình ảnh lâm sàng...</p>
-                </div>
-            )}
-
             {/* Accordion Controls + List */}
-            {!loadingClinical && groupedImages.length > 0 ? (
+            {groupedImages.length > 0 ? (
                 <>
                     <div className="lib-accordion-controls">
                         <button
@@ -333,8 +210,8 @@ export default function LibraryClient({ illustrations = [], clinicalCount = 0, d
                                                                 height={400}
                                                                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                                                                 quality={80}
-                                                                priority={activeTab === 'illustration' && index < 8}
-                                                                loading={activeTab === 'illustration' && index < 8 ? undefined : "lazy"}
+                                                                priority={index < 8 && groupedImages.indexOf(group) === 0}
+                                                                loading={index < 8 && groupedImages.indexOf(group) === 0 ? undefined : "lazy"}
                                                                 placeholder="blur"
                                                                 blurDataURL={`${getThumbnailUrl(img.image_url, 20)}&blur=10`}
                                                                 style={{ objectFit: 'cover', width: '100%', height: '100%' }}
@@ -362,18 +239,16 @@ export default function LibraryClient({ illustrations = [], clinicalCount = 0, d
                     </div>
                 </>
             ) : (
-                !loadingClinical && (
-                    <div className="lib-empty">
-                        <div className="lib-empty-icon">
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                <rect x="3" y="3" width="18" height="18" rx="2" />
-                                <circle cx="8.5" cy="8.5" r="1.5" />
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 15l-5-5L5 21" />
-                            </svg>
-                        </div>
-                        <p>Chưa có hình ảnh nào{searchQuery ? ` cho "${searchQuery}"` : ''}.</p>
+                <div className="lib-empty">
+                    <div className="lib-empty-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 15l-5-5L5 21" />
+                        </svg>
                     </div>
-                )
+                    <p>Chưa có hình ảnh nào{searchQuery ? ` cho "${searchQuery}"` : ''}.</p>
+                </div>
             )}
 
             {/* Lightbox */}
@@ -410,33 +285,6 @@ export default function LibraryClient({ illustrations = [], clinicalCount = 0, d
                                     Xem nguồn
                                 </a>
                             )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Clinical Confirmation Modal */}
-            {showClinicalModal && (
-                <div className="lib-modal-overlay" onClick={handleClinicalDecline}>
-                    <div className="lib-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="lib-modal-icon">
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                            </svg>
-                        </div>
-                        <h3 className="lib-modal-title">Xác nhận mục đích học thuật</h3>
-                        <p className="lib-modal-text">
-                            Hình ảnh lâm sàng có thể chứa nội dung nhạy cảm. Chỉ dành cho mục đích học tập, nghiên cứu y khoa hoặc chuyên gia y tế.
-                            <br /><br />
-                            Bạn xác nhận đang truy cập vì mục đích học thuật?
-                        </p>
-                        <div className="lib-modal-actions">
-                            <button className="lib-modal-btn secondary" onClick={handleClinicalDecline}>
-                                Quay lại
-                            </button>
-                            <button className="lib-modal-btn primary" onClick={handleClinicalAccept}>
-                                Xác nhận
-                            </button>
                         </div>
                     </div>
                 </div>
