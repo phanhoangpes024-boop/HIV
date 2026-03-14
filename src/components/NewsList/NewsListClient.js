@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -10,7 +10,10 @@ import { createSlugWithId } from '../../lib/slugify';
 
 const ITEMS_PER_PAGE = 10;
 
-export default function NewsListClient({ initialArticles = [], allTags = [], allInstitutions = [] }) {
+// Tiny blur placeholder (1x1 gray pixel)
+const BLUR_DATA_URL = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQwIiBoZWlnaHQ9IjE2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZTVlN2ViIi8+PC9zdmc+';
+
+export default function NewsListClient({ initialArticles = [], allTags = [], allInstitutions = [], initialTotalCount = 0 }) {
     const router = useRouter();
     const supabase = createClient();
 
@@ -28,9 +31,12 @@ export default function NewsListClient({ initialArticles = [], allTags = [], all
     const [dateFilter, setDateFilter] = useState('all');
     const [user, setUser] = useState(null);
     const [filterOpen, setFilterOpen] = useState(false);
-    const [totalCount, setTotalCount] = useState(initialArticles.length);
+    const [totalCount, setTotalCount] = useState(initialTotalCount);
     const filterRef = useRef(null);
     const searchTimeout = useRef(null);
+    // Track if we have full data loaded (for client-side filtering)
+    const [fullDataLoaded, setFullDataLoaded] = useState(false);
+    const [allArticles, setAllArticles] = useState([]);
 
     // Auth
     useEffect(() => {
@@ -54,6 +60,39 @@ export default function NewsListClient({ initialArticles = [], allTags = [], all
             }
         });
         return () => subscription.unsubscribe();
+    }, []);
+
+    // Lazy-load full article list in background after first render
+    useEffect(() => {
+        const loadFullData = async () => {
+            const { data: articles, error } = await supabase
+                .from('articles')
+                .select(`
+                    *,
+                    article_authors ( authors ( name ) ),
+                    article_tags ( tags ( name ) )
+                `)
+                .order('date', { ascending: false });
+
+            if (!error && articles) {
+                const mapped = articles.map(a => ({
+                    ...a,
+                    authors: a.article_authors?.map(x => x.authors?.name).filter(Boolean) || [],
+                    tags: a.article_tags?.map(x => x.tags?.name).filter(Boolean) || [],
+                    dateFormatted: new Date(a.date).toLocaleDateString('vi-VN'),
+                    dateRaw: a.date,
+                    article_authors: undefined,
+                    article_tags: undefined,
+                }));
+                setAllArticles(mapped);
+                setNewsData(mapped);
+                setTotalCount(mapped.length);
+                setFullDataLoaded(true);
+            }
+        };
+        // Delay loading full data to not block initial render
+        const timer = setTimeout(loadFullData, 100);
+        return () => clearTimeout(timer);
     }, []);
 
     const fetchUserLikes = async (userId) => {
@@ -81,7 +120,59 @@ export default function NewsListClient({ initialArticles = [], allTags = [], all
     };
 
     // Fetch articles (called when filter/sort/search changes)
-    const fetchArticles = async () => {
+    const fetchArticles = useCallback(async () => {
+        // If full data is loaded, filter client-side
+        if (fullDataLoaded) {
+            let result = [...allArticles];
+
+            // Date filter
+            if (dateFilter === 'week') {
+                const d = new Date(); d.setDate(d.getDate() - 7);
+                result = result.filter(a => new Date(a.dateRaw) >= d);
+            } else if (dateFilter === 'month') {
+                const d = new Date(); d.setMonth(d.getMonth() - 1);
+                result = result.filter(a => new Date(a.dateRaw) >= d);
+            } else if (dateFilter === 'year') {
+                const d = new Date(); d.setFullYear(d.getFullYear() - 1);
+                result = result.filter(a => new Date(a.dateRaw) >= d);
+            }
+
+            // Institution filter
+            if (selectedInstitutions.length > 0) {
+                result = result.filter(a => selectedInstitutions.includes(a.institution));
+            }
+
+            // Tag filter
+            if (selectedTags.length > 0) {
+                result = result.filter(a => a.tags.some(t => selectedTags.includes(t)));
+            }
+
+            // Search
+            if (searchTerm) {
+                const q = searchTerm.toLowerCase();
+                result = result.filter(a =>
+                    a.title.toLowerCase().includes(q) ||
+                    a.description?.toLowerCase().includes(q) ||
+                    a.institution?.toLowerCase().includes(q) ||
+                    a.authors.some(au => au.toLowerCase().includes(q))
+                );
+            }
+
+            // Sort
+            if (sortBy === 'latest') {
+                result.sort((a, b) => new Date(b.dateRaw) - new Date(a.dateRaw));
+            } else if (sortBy === 'popular') {
+                result.sort((a, b) => b.likes - a.likes);
+            } else if (sortBy === 'views') {
+                result.sort((a, b) => b.views - a.views);
+            }
+
+            setTotalCount(result.length);
+            setNewsData(result);
+            return;
+        }
+
+        // Fallback: fetch from server if full data not yet loaded
         try {
             setLoading(true);
             let query = supabase.from('articles').select(`
@@ -148,7 +239,7 @@ export default function NewsListClient({ initialArticles = [], allTags = [], all
         } finally {
             setLoading(false);
         }
-    };
+    }, [fullDataLoaded, allArticles, dateFilter, selectedInstitutions, selectedTags, searchTerm, sortBy]);
 
     // Only re-fetch when filters/sort/search actually change (not on first render)
     const isFirstRender = useRef(true);
@@ -158,7 +249,7 @@ export default function NewsListClient({ initialArticles = [], allTags = [], all
             return;
         }
         fetchArticles();
-    }, [sortBy, searchTerm, selectedTags, selectedInstitutions, dateFilter]);
+    }, [sortBy, searchTerm, selectedTags, selectedInstitutions, dateFilter, fetchArticles]);
 
     // Debounce search
     const handleSearchInput = (val) => {
@@ -556,7 +647,9 @@ export default function NewsListClient({ initialArticles = [], allTags = [], all
                                             width={240}
                                             height={160}
                                             className="nl-thumb-img"
-                                            {...(index < 3 ? { priority: true } : { loading: "lazy" })}
+                                            placeholder="blur"
+                                            blurDataURL={BLUR_DATA_URL}
+                                            {...(index < 2 ? { priority: true } : { loading: "lazy" })}
                                         />
                                     </div>
                                 )}
