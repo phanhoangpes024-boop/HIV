@@ -10,15 +10,38 @@ import { createSlugWithId } from '../../lib/slugify';
 
 const ITEMS_PER_PAGE = 10;
 
-// Tiny blur placeholder (1x1 gray pixel)
 const BLUR_DATA_URL = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQwIiBoZWlnaHQ9IjE2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZTVlN2ViIi8+PC9zdmc+';
 
-export default function NewsListClient({ initialArticles = [], allTags = [], allInstitutions = [], initialTotalCount = 0 }) {
+// Skeleton component for loading state
+function ArticleSkeleton() {
+    return (
+        <div className="nl-card nl-skeleton-card">
+            <div className="nl-card-body">
+                <div className="nl-skeleton-meta">
+                    <div className="nl-skeleton-line" style={{ width: '120px', height: '12px' }}></div>
+                    <div className="nl-skeleton-line" style={{ width: '70px', height: '12px' }}></div>
+                </div>
+                <div className="nl-skeleton-line" style={{ width: '90%', height: '18px', marginBottom: '8px' }}></div>
+                <div className="nl-skeleton-line" style={{ width: '70%', height: '18px', marginBottom: '10px' }}></div>
+                <div className="nl-skeleton-line" style={{ width: '40%', height: '12px', marginBottom: '10px' }}></div>
+                <div className="nl-skeleton-line" style={{ width: '100%', height: '12px', marginBottom: '4px' }}></div>
+                <div className="nl-skeleton-line" style={{ width: '85%', height: '12px', marginBottom: '10px' }}></div>
+                <div className="nl-skeleton-tags">
+                    <div className="nl-skeleton-tag"></div>
+                    <div className="nl-skeleton-tag" style={{ width: '50px' }}></div>
+                </div>
+            </div>
+            <div className="nl-skeleton-thumb"></div>
+        </div>
+    );
+}
+
+export default function NewsListClient({ allTags = [], allInstitutions = [] }) {
     const router = useRouter();
     const supabase = createClient();
 
-    // Initialize with server-provided data — no loading flicker
-    const [newsData, setNewsData] = useState(initialArticles);
+    const [newsData, setNewsData] = useState([]);
+    const [initialLoading, setInitialLoading] = useState(true);
     const [loading, setLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [sortBy, setSortBy] = useState('latest');
@@ -31,12 +54,41 @@ export default function NewsListClient({ initialArticles = [], allTags = [], all
     const [dateFilter, setDateFilter] = useState('all');
     const [user, setUser] = useState(null);
     const [filterOpen, setFilterOpen] = useState(false);
-    const [totalCount, setTotalCount] = useState(initialTotalCount);
+    const [totalCount, setTotalCount] = useState(0);
     const filterRef = useRef(null);
     const searchTimeout = useRef(null);
-    // Track if we have full data loaded (for client-side filtering)
-    const [fullDataLoaded, setFullDataLoaded] = useState(false);
-    const [allArticles, setAllArticles] = useState([]);
+    const allArticlesRef = useRef([]);
+
+    // Fetch articles on mount
+    useEffect(() => {
+        const loadArticles = async () => {
+            const { data: articles, error } = await supabase
+                .from('articles')
+                .select(`
+                    *,
+                    article_authors ( authors ( name ) ),
+                    article_tags ( tags ( name ) )
+                `)
+                .order('date', { ascending: false });
+
+            if (!error && articles) {
+                const mapped = articles.map(a => ({
+                    ...a,
+                    authors: a.article_authors?.map(x => x.authors?.name).filter(Boolean) || [],
+                    tags: a.article_tags?.map(x => x.tags?.name).filter(Boolean) || [],
+                    dateFormatted: new Date(a.date).toLocaleDateString('vi-VN'),
+                    dateRaw: a.date,
+                    article_authors: undefined,
+                    article_tags: undefined,
+                }));
+                allArticlesRef.current = mapped;
+                setNewsData(mapped);
+                setTotalCount(mapped.length);
+            }
+            setInitialLoading(false);
+        };
+        loadArticles();
+    }, []);
 
     // Auth
     useEffect(() => {
@@ -60,39 +112,6 @@ export default function NewsListClient({ initialArticles = [], allTags = [], all
             }
         });
         return () => subscription.unsubscribe();
-    }, []);
-
-    // Lazy-load full article list in background after first render
-    useEffect(() => {
-        const loadFullData = async () => {
-            const { data: articles, error } = await supabase
-                .from('articles')
-                .select(`
-                    *,
-                    article_authors ( authors ( name ) ),
-                    article_tags ( tags ( name ) )
-                `)
-                .order('date', { ascending: false });
-
-            if (!error && articles) {
-                const mapped = articles.map(a => ({
-                    ...a,
-                    authors: a.article_authors?.map(x => x.authors?.name).filter(Boolean) || [],
-                    tags: a.article_tags?.map(x => x.tags?.name).filter(Boolean) || [],
-                    dateFormatted: new Date(a.date).toLocaleDateString('vi-VN'),
-                    dateRaw: a.date,
-                    article_authors: undefined,
-                    article_tags: undefined,
-                }));
-                setAllArticles(mapped);
-                setNewsData(mapped);
-                setTotalCount(mapped.length);
-                setFullDataLoaded(true);
-            }
-        };
-        // Delay loading full data to not block initial render
-        const timer = setTimeout(loadFullData, 100);
-        return () => clearTimeout(timer);
     }, []);
 
     const fetchUserLikes = async (userId) => {
@@ -119,137 +138,62 @@ export default function NewsListClient({ initialArticles = [], allTags = [], all
         }
     };
 
-    // Fetch articles (called when filter/sort/search changes)
-    const fetchArticles = useCallback(async () => {
-        // If full data is loaded, filter client-side
-        if (fullDataLoaded) {
-            let result = [...allArticles];
+    // Apply filters client-side
+    const applyFilters = useCallback(() => {
+        let result = [...allArticlesRef.current];
 
-            // Date filter
-            if (dateFilter === 'week') {
-                const d = new Date(); d.setDate(d.getDate() - 7);
-                result = result.filter(a => new Date(a.dateRaw) >= d);
-            } else if (dateFilter === 'month') {
-                const d = new Date(); d.setMonth(d.getMonth() - 1);
-                result = result.filter(a => new Date(a.dateRaw) >= d);
-            } else if (dateFilter === 'year') {
-                const d = new Date(); d.setFullYear(d.getFullYear() - 1);
-                result = result.filter(a => new Date(a.dateRaw) >= d);
-            }
-
-            // Institution filter
-            if (selectedInstitutions.length > 0) {
-                result = result.filter(a => selectedInstitutions.includes(a.institution));
-            }
-
-            // Tag filter
-            if (selectedTags.length > 0) {
-                result = result.filter(a => a.tags.some(t => selectedTags.includes(t)));
-            }
-
-            // Search
-            if (searchTerm) {
-                const q = searchTerm.toLowerCase();
-                result = result.filter(a =>
-                    a.title.toLowerCase().includes(q) ||
-                    a.description?.toLowerCase().includes(q) ||
-                    a.institution?.toLowerCase().includes(q) ||
-                    a.authors.some(au => au.toLowerCase().includes(q))
-                );
-            }
-
-            // Sort
-            if (sortBy === 'latest') {
-                result.sort((a, b) => new Date(b.dateRaw) - new Date(a.dateRaw));
-            } else if (sortBy === 'popular') {
-                result.sort((a, b) => b.likes - a.likes);
-            } else if (sortBy === 'views') {
-                result.sort((a, b) => b.views - a.views);
-            }
-
-            setTotalCount(result.length);
-            setNewsData(result);
-            return;
+        if (dateFilter === 'week') {
+            const d = new Date(); d.setDate(d.getDate() - 7);
+            result = result.filter(a => new Date(a.dateRaw) >= d);
+        } else if (dateFilter === 'month') {
+            const d = new Date(); d.setMonth(d.getMonth() - 1);
+            result = result.filter(a => new Date(a.dateRaw) >= d);
+        } else if (dateFilter === 'year') {
+            const d = new Date(); d.setFullYear(d.getFullYear() - 1);
+            result = result.filter(a => new Date(a.dateRaw) >= d);
         }
 
-        // Fallback: fetch from server if full data not yet loaded
-        try {
-            setLoading(true);
-            let query = supabase.from('articles').select(`
-                *,
-                article_authors ( authors ( name ) ),
-                article_tags ( tags ( name ) )
-            `);
-
-            if (dateFilter === 'week') {
-                const d = new Date(); d.setDate(d.getDate() - 7);
-                query = query.gte('date', d.toISOString().split('T')[0]);
-            } else if (dateFilter === 'month') {
-                const d = new Date(); d.setMonth(d.getMonth() - 1);
-                query = query.gte('date', d.toISOString().split('T')[0]);
-            } else if (dateFilter === 'year') {
-                const d = new Date(); d.setFullYear(d.getFullYear() - 1);
-                query = query.gte('date', d.toISOString().split('T')[0]);
-            }
-
-            if (selectedInstitutions.length > 0) {
-                query = query.in('institution', selectedInstitutions);
-            }
-
-            const { data: articles, error } = await query;
-            if (error) throw error;
-
-            let result = articles.map(a => ({
-                ...a,
-                authors: a.article_authors?.map(x => x.authors?.name).filter(Boolean) || [],
-                tags: a.article_tags?.map(x => x.tags?.name).filter(Boolean) || [],
-                dateFormatted: new Date(a.date).toLocaleDateString('vi-VN'),
-                dateRaw: a.date
-            }));
-
-            // Filter by tags
-            if (selectedTags.length > 0) {
-                result = result.filter(a => a.tags.some(t => selectedTags.includes(t)));
-            }
-
-            // Search
-            if (searchTerm) {
-                const q = searchTerm.toLowerCase();
-                result = result.filter(a =>
-                    a.title.toLowerCase().includes(q) ||
-                    a.description?.toLowerCase().includes(q) ||
-                    a.institution?.toLowerCase().includes(q) ||
-                    a.authors.some(au => au.toLowerCase().includes(q))
-                );
-            }
-
-            // Sort
-            if (sortBy === 'latest') {
-                result.sort((a, b) => new Date(b.dateRaw) - new Date(a.dateRaw));
-            } else if (sortBy === 'popular') {
-                result.sort((a, b) => b.likes - a.likes);
-            } else if (sortBy === 'views') {
-                result.sort((a, b) => b.views - a.views);
-            }
-
-            setTotalCount(result.length);
-            setNewsData(result);
-        } catch (err) {
-            console.error('Lỗi khi lấy dữ liệu:', err);
-        } finally {
-            setLoading(false);
+        if (selectedInstitutions.length > 0) {
+            result = result.filter(a => selectedInstitutions.includes(a.institution));
         }
-    }, [fullDataLoaded, allArticles, dateFilter, selectedInstitutions, selectedTags, searchTerm, sortBy]);
 
-    // Only re-fetch when filters/sort/search actually change (not on first render)
+        if (selectedTags.length > 0) {
+            result = result.filter(a => a.tags.some(t => selectedTags.includes(t)));
+        }
+
+        if (searchTerm) {
+            const q = searchTerm.toLowerCase();
+            result = result.filter(a =>
+                a.title.toLowerCase().includes(q) ||
+                a.description?.toLowerCase().includes(q) ||
+                a.institution?.toLowerCase().includes(q) ||
+                a.authors.some(au => au.toLowerCase().includes(q))
+            );
+        }
+
+        if (sortBy === 'latest') {
+            result.sort((a, b) => new Date(b.dateRaw) - new Date(a.dateRaw));
+        } else if (sortBy === 'popular') {
+            result.sort((a, b) => b.likes - a.likes);
+        } else if (sortBy === 'views') {
+            result.sort((a, b) => b.views - a.views);
+        }
+
+        setTotalCount(result.length);
+        setNewsData(result);
+    }, [dateFilter, selectedInstitutions, selectedTags, searchTerm, sortBy]);
+
+    // Re-apply filters when they change
     const isFirstRender = useRef(true);
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
             return;
         }
-        fetchArticles();
-    }, [sortBy, searchTerm, selectedTags, selectedInstitutions, dateFilter, fetchArticles]);
+        if (allArticlesRef.current.length > 0) {
+            applyFilters();
+        }
+    }, [sortBy, searchTerm, selectedTags, selectedInstitutions, dateFilter, applyFilters]);
 
     // Debounce search
     const handleSearchInput = (val) => {
@@ -406,7 +350,13 @@ export default function NewsListClient({ initialArticles = [], allTags = [], all
             {/* Toolbar */}
             <div className="nl-toolbar">
                 <div className="nl-toolbar-left">
-                    <span className="nl-result-count">{totalCount.toLocaleString()} kết quả</span>
+                    <span className="nl-result-count">
+                        {initialLoading ? (
+                            <span className="nl-skeleton-line" style={{ width: '80px', height: '14px', display: 'inline-block', verticalAlign: 'middle' }}></span>
+                        ) : (
+                            `${totalCount.toLocaleString()} kết quả`
+                        )}
+                    </span>
 
                     {/* Sort */}
                     <div className="nl-sort-group">
@@ -547,8 +497,17 @@ export default function NewsListClient({ initialArticles = [], allTags = [], all
                 </div>
             )}
 
-            {/* Loading */}
-            {loading && (
+            {/* Skeleton Loading */}
+            {initialLoading && (
+                <div className="nl-list">
+                    {[...Array(5)].map((_, i) => (
+                        <ArticleSkeleton key={i} />
+                    ))}
+                </div>
+            )}
+
+            {/* Loading for filter changes */}
+            {!initialLoading && loading && (
                 <div className="nl-loading">
                     <div className="nl-spinner"></div>
                     <span>Đang tải dữ liệu...</span>
@@ -556,7 +515,7 @@ export default function NewsListClient({ initialArticles = [], allTags = [], all
             )}
 
             {/* Empty state */}
-            {!loading && currentNews.length === 0 && (
+            {!initialLoading && !loading && currentNews.length === 0 && (
                 <div className="nl-empty">
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -567,7 +526,7 @@ export default function NewsListClient({ initialArticles = [], allTags = [], all
             )}
 
             {/* Article List */}
-            {!loading && (
+            {!initialLoading && !loading && (
                 <div className="nl-list">
                     {currentNews.map((news, index) => (
                         <Link href={`/news/${createSlugWithId(news.title, news.id)}`} key={news.id} className="nl-card-link">
@@ -660,7 +619,7 @@ export default function NewsListClient({ initialArticles = [], allTags = [], all
             )}
 
             {/* Pagination */}
-            {!loading && totalPages > 1 && (
+            {!initialLoading && !loading && totalPages > 1 && (
                 <div className="nl-pagination">
                     <div className="nl-pg-info">
                         Trang {currentPage} / {totalPages}

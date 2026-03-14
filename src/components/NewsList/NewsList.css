@@ -799,3 +799,57 @@
         font-size: 0.75rem;
     }
 }
+
+/* ===== SKELETON LOADING ===== */
+@keyframes skeleton-pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.4; }
+    100% { opacity: 1; }
+}
+
+.nl-skeleton-card {
+    pointer-events: none;
+}
+
+.nl-skeleton-line {
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.nl-skeleton-meta {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 10px;
+}
+
+.nl-skeleton-tags {
+    display: flex;
+    gap: 0.35rem;
+}
+
+.nl-skeleton-tag {
+    width: 60px;
+    height: 20px;
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.nl-skeleton-thumb {
+    width: 120px;
+    height: 90px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    background-color: var(--bg-tertiary);
+    align-self: center;
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@media (max-width: 768px) {
+    .nl-skeleton-thumb {
+        width: 88px;
+        height: 68px;
+        border-radius: 6px;
+    }
+}
