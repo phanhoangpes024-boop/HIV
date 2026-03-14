@@ -289,8 +289,8 @@ export default function NewsListClient({ initialArticles = [], allTags = [], all
         <div className="nl-container">
             {/* Hero Search Bar */}
             <div className="nl-hero">
-                <Image src="/Logo.png" alt="EpiHouse – Cơ Sở Dữ Liệu Bệnh Truyền Nhiễm Việt Nam" width={120} height={120} className="nl-hero-logo logo-light" />
-                <Image src="/Dark Logo.png" alt="EpiHouse – Cơ Sở Dữ Liệu Bệnh Truyền Nhiễm Việt Nam" width={120} height={120} className="nl-hero-logo logo-dark" />
+                <Image src="/Logo.webp" alt="EpiHouse – Cơ Sở Dữ Liệu Bệnh Truyền Nhiễm Việt Nam" width={120} height={120} className="nl-hero-logo logo-light" priority />
+                <Image src="/Dark Logo.webp" alt="EpiHouse – Cơ Sở Dữ Liệu Bệnh Truyền Nhiễm Việt Nam" width={120} height={120} className="nl-hero-logo logo-dark" priority />
                 <h1 className="nl-hero-title brand-font">Cơ Sở Dữ Liệu Bệnh Truyền Nhiễm</h1>
                 <p className="nl-hero-subtitle">Tin tức, hướng dẫn lâm sàng và nghiên cứu y khoa về bệnh truyền nhiễm mới nhất tại Việt Nam</p>
                 <div className="nl-search-bar">
@@ -478,7 +478,7 @@ export default function NewsListClient({ initialArticles = [], allTags = [], all
             {/* Article List */}
             {!loading && (
                 <div className="nl-list">
-                    {currentNews.map((news) => (
+                    {currentNews.map((news, index) => (
                         <Link href={`/news/${createSlugWithId(news.title, news.id)}`} key={news.id} className="nl-card-link">
                             <article className="nl-card">
                                 {/* Left content */}
@@ -556,7 +556,7 @@ export default function NewsListClient({ initialArticles = [], allTags = [], all
                                             width={240}
                                             height={160}
                                             className="nl-thumb-img"
-                                            loading="lazy"
+                                            {...(index < 3 ? { priority: true } : { loading: "lazy" })}
                                         />
                                     </div>
                                 )}

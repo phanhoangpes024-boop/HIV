@@ -7,12 +7,14 @@ import Script from "next/script";
 
 const playfair = Playfair_Display({
   subsets: ["latin", "vietnamese"],
+  weight: ["400", "700", "800"],
   variable: "--font-playfair",
   display: 'swap',
 });
 
 const notoSerif = Noto_Serif({
   subsets: ["latin", "vietnamese"],
+  weight: ["400", "700"],
   variable: "--font-noto-serif",
   display: 'swap',
 });
@@ -81,7 +83,7 @@ const organizationSchema = {
   url: 'https://epihouse.org',
   logo: {
     '@type': 'ImageObject',
-    url: 'https://epihouse.org/Logo.png',
+    url: 'https://epihouse.org/Logo.webp',
   },
   description: 'Cơ sở dữ liệu tin tức bệnh truyền nhiễm, hướng dẫn lâm sàng và nghiên cứu y khoa mới nhất tại Việt Nam.',
   sameAs: [],
@@ -109,9 +111,9 @@ export default function RootLayout({ children }) {
       <head>
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-2638EG8JJE"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
-        <Script id="google-analytics" strategy="afterInteractive">
+        <Script id="google-analytics" strategy="lazyOnload">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}

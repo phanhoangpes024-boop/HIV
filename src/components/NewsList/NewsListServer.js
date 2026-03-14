@@ -50,40 +50,8 @@ async function fetchInitialData() {
 export default async function NewsListServer() {
     const { articles, allTags, allInstitutions } = await fetchInitialData();
 
-    const jsonLd = {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        "name": "EpiHouse",
-        "url": "https://epihouse.org",
-        "logo": "https://epihouse.org/Logo.png",
-        "description": "Cơ sở dữ liệu tin tức, hướng dẫn lâm sàng và nghiên cứu y khoa về bệnh truyền nhiễm tại Việt Nam.",
-        "sameAs": [
-            "https://www.facebook.com/epihouse.org"
-        ]
-    };
-
-    const websiteJsonLd = {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "EpiHouse",
-        "url": "https://epihouse.org",
-        "potentialAction": {
-            "@type": "SearchAction",
-            "target": "https://epihouse.org/?s={search_term_string}",
-            "query-input": "required name=search_term_string"
-        }
-    };
-
     return (
         <>
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-            />
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
-            />
             <NewsListClient
                 initialArticles={articles}
                 allTags={allTags}
