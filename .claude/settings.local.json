@@ -3,7 +3,13 @@
     "allow": [
       "Bash(npx sharp-cli:*)",
       "Bash(npm run:*)",
-      "mcp__Claude_Preview__preview_start"
+      "mcp__Claude_Preview__preview_start",
+      "Bash(find '/c/Users/phanh/OneDrive/Desktop/Project/epi house' -type f \\\\\\(-iname *gallery* -o -iname *thu* -o -iname *vien* \\\\\\))",
+      "Bash(find '/c/Users/phanh/OneDrive/Desktop/Project/epi house/src' -type f -name *.js -o -name *.jsx -o -name *.tsx -o -name *.ts)",
+      "Bash(find '/c/Users/phanh/OneDrive/Desktop/Project/epi house/src' -type f \\\\\\(-name *.js -o -name *.jsx -o -name *.ts -o -name *.tsx \\\\\\))",
+      "Bash(find '/c/Users/phanh/OneDrive/Desktop/Project/epi house' -maxdepth 2 -type f -name *config*)",
+      "Bash(grep -E \"\\\\.\\(xml|json|txt\\)$\")",
+      "Bash(grep -E \"\\\\.\\(xml|json|txt|md\\)$\")"
     ]
   }
 }

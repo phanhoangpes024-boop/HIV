@@ -27,6 +27,17 @@ export default async function sitemap() {
         priority: 0.8,
     }));
 
+    // Fetch library images (non-sensitive only for indexing)
+    const { data: symptomImages } = await supabase
+        .from('symptom_images')
+        .select('name, description, image_url, is_sensitive, created_at')
+        .eq('is_sensitive', false)
+        .order('created_at', { ascending: false });
+
+    const libraryImages = (symptomImages || [])
+        .filter((img) => img.image_url)
+        .map((img) => img.image_url);
+
     return [
         {
             url: baseUrl,
@@ -39,6 +50,13 @@ export default async function sitemap() {
             lastModified: new Date(),
             changeFrequency: 'weekly',
             priority: 0.9,
+        },
+        {
+            url: `${baseUrl}/library`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.8,
+            images: libraryImages,
         },
         ...articleEntries,
         ...guidelineEntries,
