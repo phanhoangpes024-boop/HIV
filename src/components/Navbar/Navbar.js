@@ -14,6 +14,7 @@ export default function Navbar() {
     const [user, setUser] = useState(null);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [mobileNavVisible, setMobileNavVisible] = useState(true);
+    const [moreOpen, setMoreOpen] = useState(false);
     const [lastScrollY, setLastScrollY] = useState(0);
     const [avatarUrl, setAvatarUrl] = useState(null);
     const [displayName, setDisplayName] = useState('');
@@ -142,6 +143,15 @@ export default function Navbar() {
                     <rect x="3" y="3" width="18" height="18" rx="2" strokeLinecap="round" strokeLinejoin="round" />
                     <circle cx="8.5" cy="8.5" r="1.5" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 15l-5-5L5 21" />
+                </svg>
+            )
+        },
+        {
+            href: '/tools',
+            label: 'Công cụ',
+            icon: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
                 </svg>
             )
         },
@@ -290,61 +300,119 @@ export default function Navbar() {
                 </div>
             </nav>
 
-            {/* Mobile Bottom Navbar — giữ nguyên */}
+            {/* Mobile Bottom Navbar — 4 nav + More button */}
             <nav className={`mobile-navbar ${mobileNavVisible ? '' : 'hidden'}`}>
                 {navItems.map((item) => (
                     <Link
                         key={item.href}
                         href={item.href}
                         className={`mobile-nav-item ${pathname === item.href ? 'active' : ''}`}
+                        onClick={() => setMoreOpen(false)}
                     >
                         <div className="mobile-nav-icon">{item.icon}</div>
                         <span className="mobile-nav-label">{item.label}</span>
                     </Link>
                 ))}
 
-                <button onClick={toggleTheme} className="mobile-nav-item">
+                {/* More button */}
+                <button
+                    className={`mobile-nav-item ${moreOpen ? 'active' : ''}`}
+                    onClick={() => setMoreOpen(!moreOpen)}
+                    id="mobile-more-btn"
+                >
                     <div className="mobile-nav-icon">
-                        <svg className="sun-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <circle cx="12" cy="12" r="5" strokeWidth="2"></circle>
-                            <line x1="12" y1="1" x2="12" y2="3" strokeWidth="2"></line>
-                            <line x1="12" y1="21" x2="12" y2="23" strokeWidth="2"></line>
-                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" strokeWidth="2"></line>
-                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" strokeWidth="2"></line>
-                            <line x1="1" y1="12" x2="3" y2="12" strokeWidth="2"></line>
-                            <line x1="21" y1="12" x2="23" y2="12" strokeWidth="2"></line>
-                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" strokeWidth="2"></line>
-                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" strokeWidth="2"></line>
-                        </svg>
-                        <svg className="moon-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" strokeWidth="2"></path>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+                            <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+                            <circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/>
                         </svg>
                     </div>
-                    <span className="mobile-nav-label">Theme</span>
+                    <span className="mobile-nav-label">Thêm</span>
+                </button>
+            </nav>
+
+            {/* More bottom sheet backdrop */}
+            {moreOpen && (
+                <div className="mobile-sheet-backdrop" onClick={() => setMoreOpen(false)} />
+            )}
+
+            {/* More bottom sheet */}
+            <div className={`mobile-sheet ${moreOpen ? 'open' : ''}`} id="mobile-more-sheet">
+                <div className="mobile-sheet-handle" />
+
+                {/* Theme toggle row */}
+                <button
+                    className="mobile-sheet-item"
+                    onClick={() => { toggleTheme(); setMoreOpen(false); }}
+                    id="mobile-theme-toggle"
+                >
+                    <span className="mobile-sheet-item-icon">
+                        <svg className="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <line x1="12" y1="1" x2="12" y2="3"/>
+                            <line x1="12" y1="21" x2="12" y2="23"/>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                            <line x1="1" y1="12" x2="3" y2="12"/>
+                            <line x1="21" y1="12" x2="23" y2="12"/>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                        </svg>
+                        <svg className="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </span>
+                    <span className="mobile-sheet-item-label">{theme === 'light' ? 'Chuyển sang Dark mode' : 'Chuyển sang Light mode'}</span>
+                    <span className="mobile-sheet-item-badge">{theme === 'light' ? '🌙' : '☀️'}</span>
                 </button>
 
+                <div className="mobile-sheet-divider" />
+
                 {user ? (
-                    <button className="mobile-nav-item" onClick={() => setUserMenuOpen(!userMenuOpen)}>
-                        <div className="mobile-nav-icon">
-                            {avatarUrl ? (
-                                <img src={avatarUrl} alt="" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />
-                            ) : (
-                                <div className="user-avatar-mobile">{initial}</div>
-                            )}
-                        </div>
-                        <span className="mobile-nav-label">Tôi</span>
-                    </button>
+                    <>
+                        <button
+                            className="mobile-sheet-item"
+                            onClick={() => { setMoreOpen(false); router.push('/profile'); }}
+                            id="mobile-profile-btn"
+                        >
+                            <span className="mobile-sheet-item-icon">
+                                {avatarUrl ? (
+                                    <img src={avatarUrl} alt="" style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }} />
+                                ) : (
+                                    <div className="user-avatar-mobile">{initial}</div>
+                                )}
+                            </span>
+                            <span className="mobile-sheet-item-label">{displayName || email || 'Hồ sơ'}</span>
+                        </button>
+                        <button
+                            className="mobile-sheet-item mobile-sheet-item--danger"
+                            onClick={() => { setMoreOpen(false); handleLogout(); }}
+                            id="mobile-logout-btn"
+                        >
+                            <span className="mobile-sheet-item-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                            </span>
+                            <span className="mobile-sheet-item-label">Đăng xuất</span>
+                        </button>
+                    </>
                 ) : (
-                    <Link href="/signin" className="mobile-nav-item">
-                        <div className="mobile-nav-icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                    <Link
+                        href="/signin"
+                        className="mobile-sheet-item"
+                        onClick={() => setMoreOpen(false)}
+                        id="mobile-signin-btn"
+                    >
+                        <span className="mobile-sheet-item-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                             </svg>
-                        </div>
-                        <span className="mobile-nav-label">Đăng nhập</span>
+                        </span>
+                        <span className="mobile-sheet-item-label">Đăng nhập</span>
                     </Link>
                 )}
-            </nav>
+            </div>
         </>
     );
 }
