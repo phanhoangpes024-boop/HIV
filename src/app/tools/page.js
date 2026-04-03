@@ -2,17 +2,103 @@ import Link from 'next/link';
 import './Tools.css';
 
 export const metadata = {
-    title: 'Công cụ y tế — EpiHouse',
-    description: 'Bộ công cụ y tế trực tuyến: đánh giá nguy cơ HIV, tính liều thuốc và nhiều tiện ích lâm sàng khác.',
+    title: 'Công cụ y tế trực tuyến',
+    description:
+        'Bộ công cụ y tế lâm sàng trực tuyến miễn phí: đánh giá nguy cơ phơi nhiễm HIV, tra cứu cửa sổ xét nghiệm HIV (window period) và nhiều tiện ích lâm sàng khác. Xử lý ngay trên trình duyệt, không lưu trữ dữ liệu.',
+    keywords: [
+        'công cụ y tế trực tuyến',
+        'tool HIV',
+        'máy tính HIV',
+        'đánh giá nguy cơ HIV',
+        'cửa sổ xét nghiệm HIV',
+        'window period HIV',
+        'PEP HIV',
+        'công cụ lâm sàng',
+        'y tế Việt Nam',
+        'EpiHouse tools',
+    ],
     alternates: {
         canonical: 'https://epihouse.org/tools',
     },
     openGraph: {
-        title: 'Công cụ y tế — EpiHouse',
-        description: 'Bộ công cụ y tế trực tuyến: đánh giá nguy cơ HIV, tính liều thuốc và nhiều tiện ích lâm sàng khác.',
+        title: 'Công cụ y tế trực tuyến — EpiHouse',
+        description:
+            'Bộ công cụ y tế lâm sàng trực tuyến miễn phí: đánh giá nguy cơ HIV, tra cứu cửa sổ xét nghiệm HIV và nhiều tiện ích khác.',
         url: 'https://epihouse.org/tools',
         type: 'website',
+        siteName: 'EpiHouse',
+        locale: 'vi_VN',
+        images: [
+            {
+                url: 'https://epihouse.org/og-tools.png',
+                width: 1200,
+                height: 630,
+                alt: 'Công cụ y tế trực tuyến — EpiHouse',
+            },
+        ],
     },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Công cụ y tế trực tuyến — EpiHouse',
+        description:
+            'Bộ công cụ y tế lâm sàng miễn phí: đánh giá nguy cơ HIV, cửa sổ xét nghiệm HIV và nhiều hơn nữa.',
+        images: ['https://epihouse.org/og-tools.png'],
+    },
+    robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+            index: true,
+            follow: true,
+            'max-snippet': -1,
+            'max-image-preview': 'large',
+        },
+    },
+};
+
+const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+        {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Trang chủ',
+            item: 'https://epihouse.org',
+        },
+        {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Công cụ y tế',
+            item: 'https://epihouse.org/tools',
+        },
+    ],
+};
+
+const itemListSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Công cụ y tế trực tuyến — EpiHouse',
+    url: 'https://epihouse.org/tools',
+    description: 'Bộ công cụ y tế lâm sàng trực tuyến miễn phí tại EpiHouse.',
+    itemListElement: [
+        {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Máy tính nguy cơ phơi nhiễm HIV',
+            url: 'https://epihouse.org/tools/hiv-risk-calculator',
+            description:
+                'Ước tính xác suất lây nhiễm HIV sau phơi nhiễm. Dựa trên CDC/Patel et al. 2014.',
+        },
+        {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Cửa sổ xét nghiệm HIV (Window Period)',
+            url: 'https://epihouse.org/tools/hiv-window-period',
+            description:
+                'Tra cứu độ nhạy 3 loại xét nghiệm HIV theo ngày sau phơi nhiễm. Dựa trên Delaney et al. 2017.',
+        },
+    ],
 };
 
 const tools = [
@@ -30,7 +116,7 @@ const tools = [
     {
         href: '/tools/hiv-window-period',
         name: 'Cửa sổ xét nghiệm HIV (Window Period)',
-        description: 'Tra cứu độ nhạy 5 loại xét nghiệm HIV theo ngày sau phơi nhiễm. Mô hình sigmoid từ Delaney et al. 2017 — kèm khuyến nghị lâm sàng.',
+        description: 'Tra cứu độ nhạy 3 loại xét nghiệm HIV theo ngày sau phơi nhiễm. Mô hình sigmoid từ Delaney et al. 2017 — kèm khuyến nghị lâm sàng.',
         tag: 'HIV / Xét nghiệm',
         icon: (
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -42,6 +128,22 @@ const tools = [
 ];
 
 export default function ToolsPage() {
+    return (
+        <>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
+            />
+            <_ToolsContent />
+        </>
+    );
+}
+
+function _ToolsContent() {
     return (
         <div className="tools-container">
             <div className="tools-hero">
@@ -73,3 +175,4 @@ export default function ToolsPage() {
         </div>
     );
 }
+
