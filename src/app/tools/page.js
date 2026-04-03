@@ -27,6 +27,18 @@ const tools = [
             </svg>
         ),
     },
+    {
+        href: '/tools/hiv-window-period',
+        name: 'Cửa sổ xét nghiệm HIV (Window Period)',
+        description: 'Tra cứu độ nhạy 5 loại xét nghiệm HIV theo ngày sau phơi nhiễm. Mô hình sigmoid từ Delaney et al. 2017 — kèm khuyến nghị lâm sàng.',
+        tag: 'HIV / Xét nghiệm',
+        icon: (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 13h2l3-8 4 16 3-8h2" />
+                <circle cx="19" cy="13" r="2" />
+            </svg>
+        ),
+    },
 ];
 
 export default function ToolsPage() {
